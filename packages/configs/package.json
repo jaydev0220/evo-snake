@@ -1,0 +1,21 @@
+{
+	"name": "@packages/configs",
+	"exports": {
+		"./.oxlintrc.json": {
+			"default": "./.oxlintrc.json",
+			"types": "./.oxlintrc.json.d.ts"
+		},
+		"./.oxfmtrc.json": {
+			"default": "./.oxfmtrc.json",
+			"types": "./.oxfmtrc.json.d.ts"
+		}
+	},
+	"devDependencies": {
+		"oxfmt": "catalog:",
+		"oxlint": "catalog:"
+	},
+	"peerDependencies": {
+		"oxfmt": "catalog:",
+		"oxlint": "catalog:"
+	}
+}

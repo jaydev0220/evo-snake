@@ -1,0 +1,39 @@
+{
+	"name": "@apps/api",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "tsx src/index.ts",
+		"build": "tsc",
+		"type-check": "tsc --noEmit",
+		"lint": "oxlint . --fix",
+		"format": "oxfmt src & prisma format",
+		"db:studio": "prisma studio",
+		"db:generate": "prisma generate",
+		"db:migrate:dev": "prisma migrate dev",
+		"db:migrate:deploy": "prisma migrate deploy"
+	},
+	"dependencies": {
+		"@prisma/adapter-better-sqlite3": "catalog:api",
+		"@prisma/client": "catalog:api",
+		"cors": "catalog:api",
+		"express": "catalog:api",
+		"helmet": "catalog:api",
+		"zod": "catalog:api"
+	},
+	"devDependencies": {
+		"@packages/configs": "workspace:*",
+		"@tsconfig/node24": "catalog:",
+		"@types/better-sqlite3": "catalog:api",
+		"@types/cors": "catalog:api",
+		"@types/express": "catalog:api",
+		"@types/node": "catalog:",
+		"dotenv": "catalog:api",
+		"oxfmt": "catalog:",
+		"oxlint": "catalog:",
+		"prisma": "catalog:api",
+		"tsx": "catalog:api",
+		"typescript": "catalog:"
+	}
+}

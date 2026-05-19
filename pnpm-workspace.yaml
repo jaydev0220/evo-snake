@@ -1,0 +1,49 @@
+packages:
+  - apps/*
+  - packages/*
+
+catalogMode: strict
+
+catalog:
+  '@types/node': ^24
+  oxfmt: ^0.50.0
+  oxlint: ^1.65.0
+  typescript: ^6.0.3
+  '@tsconfig/node24': ^24
+
+catalogs:
+  api:
+    '@lucide/vue': ^1.16.0
+    '@prisma/adapter-better-sqlite3': ^7.8.0
+    '@prisma/client': ^7.8.0
+    '@types/better-sqlite3': ^7.6.13
+    '@types/cors': ^2.8.19
+    '@types/express': ^5.0.6
+    cors: ^2.8.6
+    dotenv: ^17.4.2
+    express: ^5.2.1
+    helmet: ^8.1.0
+    prisma: ^7.8.0
+    tsx: ^4.22.1
+    zod: ^4.4.3
+  web:
+    '@vitejs/plugin-vue': '^6.0.6'
+    '@vue/eslint-config-typescript': '^14.7.0'
+    '@vue/tsconfig': '^0.9.1'
+    eslint: ^10.2.1
+    eslint-config-prettier: ^10.1.8
+    eslint-plugin-oxlint: ~1.60.0
+    eslint-plugin-vue: ~10.8.0
+    jiti: ^2.6.1
+    npm-run-all2: ^8.0.4
+    vite: ^8.0.8
+    vite-plugin-vue-devtools: ^8.1.1
+    vue-tsc: ^3.2.6
+    vue: ^3.5.32
+    vue-router: ^5.0.4
+
+allowBuilds:
+  '@prisma/engines': true
+  better-sqlite3: true
+  esbuild: true
+  prisma: true

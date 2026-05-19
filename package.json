@@ -1,0 +1,18 @@
+{
+	"name": "evo-snake",
+	"author": {
+		"name": "Jay",
+		"url": "https://github.com/jaydev0220"
+	},
+	"license": "MIT",
+	"scripts": {
+		"dev": "pnpm --filter api --filter web run --parallel --stream dev",
+		"build": "pnpm -r run build",
+		"type-check": "pnpm -r run type-check",
+		"lint": "pnpm -r run lint",
+		"format": "pnpm -r run format"
+	},
+	"engines": {
+		"node": "^24"
+	}
+}

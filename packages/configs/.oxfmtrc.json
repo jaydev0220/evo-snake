@@ -1,0 +1,16 @@
+{
+	"endOfLine": "lf",
+	"htmlWhitespaceSensitivity": "ignore",
+	"insertFinalNewline": true,
+	"printWidth": 100,
+	"semi": true,
+	"singleAttributePerLine": true,
+	"sortImports": true,
+	"singleQuote": true,
+	"sortPackageJson": true,
+	"sortTailwindcss": true,
+	"tabWidth": 2,
+	"trailingComma": "none",
+	"useTabs": true,
+	"vueIndentScriptAndStyle": true
+}
