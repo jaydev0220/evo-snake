@@ -13,5 +13,5 @@
 		"rootDir": "./src",
 		"outDir": "./dist"
 	},
-	"exclude": ["node_modules", "dist"]
+	"exclude": ["node_modules", "dist", "prisma.config.ts", "oxlint.config.ts", "oxfmt.config.ts"]
 }

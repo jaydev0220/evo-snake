@@ -10,3 +10,19 @@ generator client {
 datasource db {
   provider = "sqlite"
 }
+
+model Player {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  scores    Score[]
+}
+
+model Score {
+  id         String   @id @default(uuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  score      Int
+  difficulty String
+  weekStart  DateTime
+  createdAt  DateTime @default(now())
+}
