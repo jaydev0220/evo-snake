@@ -6,7 +6,13 @@ import { scheduleWeeklyCleanup, cleanupOldScores } from './services/cleanup';
 const env = validateEnv();
 
 async function main() {
-	await cleanupOldScores();
+	try {
+		await cleanupOldScores();
+	} catch {
+		console.warn(
+			'Skipping initial cleanup (tables may not exist yet). Run `prisma db push` to set up the database.'
+		);
+	}
 	scheduleWeeklyCleanup();
 
 	app.listen(env.PORT, () => {
