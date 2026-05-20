@@ -15,6 +15,7 @@
 		"db:migrate:deploy": "prisma migrate deploy"
 	},
 	"dependencies": {
+		"@packages/types": "workspace:*",
 		"@prisma/adapter-better-sqlite3": "catalog:api",
 		"@prisma/client": "catalog:api",
 		"cors": "catalog:api",

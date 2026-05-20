@@ -1,30 +1,11 @@
+import type { LeaderboardEntry, PlayerRank, SubmitScoreBody } from '@packages/types';
+
 import { getWeekStart } from '../lib/utils/weekStart';
 import { prisma } from './prisma';
 
 const LEADERBOARD_LIMIT = 20;
 
-export interface SubmitScoreInput {
-	playerId: string;
-	score: number;
-	difficulty: string;
-}
-
-export interface LeaderboardEntry {
-	rank: number;
-	playerId: string;
-	score: number;
-	difficulty: string;
-	createdAt: string;
-}
-
-export interface PlayerRank {
-	rank: number;
-	playerId: string;
-	score: number;
-	difficulty: string;
-}
-
-export async function submitScore(input: SubmitScoreInput): Promise<void> {
+export async function submitScore(input: SubmitScoreBody): Promise<void> {
 	const weekStart = getWeekStart();
 	await prisma.score.create({
 		data: {

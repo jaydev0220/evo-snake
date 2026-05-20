@@ -1,0 +1,16 @@
+{
+	"name": "@packages/types",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"default": "./src/index.ts"
+		}
+	},
+	"devDependencies": {
+		"typescript": "catalog:",
+		"zod": "catalog:api"
+	}
+}
