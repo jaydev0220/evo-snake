@@ -7,14 +7,16 @@ const LEADERBOARD_LIMIT = 20;
 
 export async function submitScore(input: SubmitScoreBody): Promise<void> {
 	const weekStart = getWeekStart();
+
+	await prisma.player.upsert({
+		where: { id: input.playerId },
+		create: { id: input.playerId },
+		update: {}
+	});
+
 	await prisma.score.create({
 		data: {
-			player: {
-				connectOrCreate: {
-					where: { id: input.playerId },
-					create: { id: input.playerId }
-				}
-			},
+			playerId: input.playerId,
 			score: input.score,
 			difficulty: input.difficulty,
 			weekStart
