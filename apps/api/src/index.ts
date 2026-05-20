@@ -1,15 +1,16 @@
 import 'dotenv/config';
 import app from './app';
+import { validateEnv } from './lib/schemas/env';
 import { scheduleWeeklyCleanup, cleanupOldScores } from './services/cleanup';
 
-const PORT = process.env.PORT ?? 3000;
+const env = validateEnv();
 
 async function main() {
 	await cleanupOldScores();
 	scheduleWeeklyCleanup();
 
-	app.listen(PORT, () => {
-		console.log(`Server running on port ${PORT}`);
+	app.listen(env.PORT, () => {
+		console.log(`Server running on port ${env.PORT}`);
 	});
 }
 

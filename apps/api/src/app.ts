@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 
+import { env } from './lib/schemas/env';
 import router from './routes';
 
 const app = express();
@@ -9,7 +10,7 @@ const app = express();
 app.use(helmet());
 app.use(
 	cors({
-		origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+		origin: env.CORS_ORIGIN,
 		methods: ['GET', 'POST'],
 		allowedHeaders: ['Content-Type']
 	})

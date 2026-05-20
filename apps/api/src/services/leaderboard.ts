@@ -1,4 +1,4 @@
-import { getWeekStart } from '../utils/weekStart';
+import { getWeekStart } from '../lib/utils/weekStart';
 import { prisma } from './prisma';
 
 const LEADERBOARD_LIMIT = 20;

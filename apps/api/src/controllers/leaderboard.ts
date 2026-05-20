@@ -1,6 +1,10 @@
 import type { Request, Response } from 'express';
 
-import { submitScoreSchema, leaderboardQuerySchema, meQuerySchema } from '../schemas/leaderboard';
+import {
+	submitScoreSchema,
+	leaderboardQuerySchema,
+	meQuerySchema
+} from '../lib/schemas/leaderboard';
 import { submitScore, getLeaderboard, getPlayerRank } from '../services/leaderboard';
 
 export async function handlePostScore(req: Request, res: Response): Promise<void> {
