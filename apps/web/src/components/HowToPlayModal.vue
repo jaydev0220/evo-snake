@@ -2,6 +2,8 @@
 	import { Apple, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, X } from '@lucide/vue';
 	import { ref, watch, nextTick } from 'vue';
 
+	import { FRUIT_GUIDE, APPLE_COLORS } from '../lib/data';
+
 	const isOpen = defineModel<boolean>({ required: true });
 
 	const modalRef = ref<HTMLElement | null>(null);
@@ -24,59 +26,6 @@
 			triggerElement.focus();
 		}
 	});
-
-	interface FruitGuideItem {
-		id: string;
-		name: string;
-		effect: string;
-		outline: string;
-		color: string;
-	}
-
-	const fruits: FruitGuideItem[] = [
-		{
-			id: 'classic',
-			name: 'Classic Apple',
-			effect: 'Increases your score and grows the snake.',
-			outline: '#9F1D1D',
-			color: '#E53935'
-		},
-		{
-			id: 'shrink',
-			name: 'Shrink Apple',
-			effect: 'Shortens the snake without giving points.',
-			outline: '#4C1D95',
-			color: '#8E44AD'
-		},
-		{
-			id: 'turbo',
-			name: 'Turbo Apple',
-			effect: "Temporarily increases the snake's speed and raises the points multiplier.",
-			outline: '#9A3412',
-			color: '#F97316'
-		},
-		{
-			id: 'chill',
-			name: 'Chill Apple',
-			effect: 'Temporarily slows the snake down, but lowers the points multiplier.',
-			outline: '#0369A1',
-			color: '#38BDF8'
-		},
-		{
-			id: 'ghost',
-			name: 'Ghost Apple',
-			effect: 'Temporarily lets the snake pass through its own body.',
-			outline: '#7DD3FC',
-			color: '#E0F2FE'
-		},
-		{
-			id: 'golden',
-			name: 'Golden Apple',
-			effect: "Gives bonus points without increasing the snake's length.",
-			outline: '#B45309',
-			color: '#FACC15'
-		}
-	];
 </script>
 
 <template>
@@ -223,7 +172,7 @@
 
 						<div class="grid gap-2.5">
 							<div
-								v-for="fruit in fruits"
+								v-for="fruit in FRUIT_GUIDE"
 								:key="fruit.id"
 								class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid grid-cols-[40px_1fr] items-start gap-3 border p-3 md:grid-cols-[44px_1fr]"
 							>
@@ -232,8 +181,8 @@
 									aria-hidden="true"
 								>
 									<Apple
-										:color="fruit.outline"
-										:fill="fruit.color"
+										:color="APPLE_COLORS[fruit.id].outline"
+										:fill="APPLE_COLORS[fruit.id].fill"
 									/>
 								</div>
 

@@ -1,6 +1,6 @@
 export type Direction = 'up' | 'down' | 'left' | 'right';
 export type AppleType = 'classic' | 'shrink' | 'turbo' | 'chill' | 'ghost' | 'golden';
-export type GameStatus = 'idle' | 'playing' | 'paused' | 'gameOver';
+export type GameStatus = 'idle' | 'playing' | 'gameOver';
 
 export interface Position {
 	x: number;
@@ -30,16 +30,16 @@ export interface DifficultyConfig {
 }
 
 export const DIFFICULTIES: Record<string, DifficultyConfig> = {
-	easy: { label: 'Easy', mapWidth: 24, mapHeight: 24, tickMs: 160, specialAppleLifetimeMs: 9000 },
+	easy: { label: 'Easy', mapWidth: 24, mapHeight: 24, tickMs: 200, specialAppleLifetimeMs: 9000 },
 	normal: {
 		label: 'Normal',
 		mapWidth: 20,
 		mapHeight: 20,
-		tickMs: 120,
+		tickMs: 160,
 		specialAppleLifetimeMs: 7500
 	},
-	hard: { label: 'Hard', mapWidth: 16, mapHeight: 16, tickMs: 90, specialAppleLifetimeMs: 6000 },
-	asian: { label: 'Asian', mapWidth: 14, mapHeight: 14, tickMs: 70, specialAppleLifetimeMs: 4500 }
+	hard: { label: 'Hard', mapWidth: 16, mapHeight: 16, tickMs: 120, specialAppleLifetimeMs: 6000 },
+	asian: { label: 'Asian', mapWidth: 14, mapHeight: 14, tickMs: 90, specialAppleLifetimeMs: 4500 }
 };
 
 export const APPLE_COLORS: Record<AppleType, { fill: string; outline: string }> = {
@@ -76,10 +76,10 @@ export const CHILL_POINTS_DELTA = -0.25;
 
 export const GHOST_DURATION_MS = 4500;
 
-export const SHRINK_LENGTH_DELTA = -3;
+export const SHRINK_LENGTH_DELTA = -1;
 export const CLASSIC_LENGTH_DELTA = 1;
 
-export const GOLDEN_SCORE_MULTIPLIER = 3;
+export const GOLDEN_SCORE_MULTIPLIER = 2;
 
 export const SNAKE_COLORS = {
 	normal: '#54d978',
@@ -91,3 +91,40 @@ export const SNAKE_COLORS = {
 export const GRID_COLOR = 'rgba(242, 247, 243, 0.045)';
 export const BOARD_BG = '#1f2a23';
 export const GOLDEN_SHINE_COLOR = 'rgba(255, 255, 255, 0.6)';
+
+export interface FruitGuideItem {
+	id: AppleType;
+	name: string;
+	effect: string;
+}
+
+export const FRUIT_GUIDE: FruitGuideItem[] = [
+	{ id: 'classic', name: 'Classic Apple', effect: 'Increases your score and grows the snake.' },
+	{ id: 'shrink', name: 'Shrink Apple', effect: 'Shortens the snake without giving points.' },
+	{
+		id: 'turbo',
+		name: 'Turbo Apple',
+		effect: "Temporarily increases the snake's speed and raises the points multiplier."
+	},
+	{
+		id: 'chill',
+		name: 'Chill Apple',
+		effect: 'Temporarily slows the snake down, but lowers the points multiplier.'
+	},
+	{
+		id: 'ghost',
+		name: 'Ghost Apple',
+		effect: 'Temporarily lets the snake pass through its own body.'
+	},
+	{
+		id: 'golden',
+		name: 'Golden Apple',
+		effect: "Gives bonus points without increasing the snake's length."
+	}
+];
+
+export const EFFECT_LABELS: Record<string, { label: string; color: string }> = {
+	turbo: { label: 'Turbo', color: '#F97316' },
+	chill: { label: 'Chill', color: '#38BDF8' },
+	ghost: { label: 'Ghost', color: '#E0F2FE' }
+};

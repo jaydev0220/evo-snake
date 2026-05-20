@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { ArrowLeft } from '@lucide/vue';
+	import { Apple as AppleIcon, ArrowLeft } from '@lucide/vue';
 	import { ref, onMounted, onUnmounted, computed } from 'vue';
 
 	import {
@@ -23,12 +23,13 @@
 		GRID_COLOR,
 		BOARD_BG,
 		GOLDEN_SHINE_COLOR,
+		EFFECT_LABELS,
 		type Direction,
 		type AppleType,
 		type GameStatus,
 		type Position,
 		type ActiveEffect,
-		type Apple,
+		type Apple
 	} from '../lib/data';
 
 	const emit = defineEmits<{
@@ -73,6 +74,15 @@
 	const isGhostActive = computed(() => activeEffects.value.some((e) => e.type === 'ghost'));
 	const isTurboActive = computed(() => activeEffects.value.some((e) => e.type === 'turbo'));
 	const isChillActive = computed(() => activeEffects.value.some((e) => e.type === 'chill'));
+
+	const activeEffectsList = computed(() => {
+		const now = Date.now();
+		return activeEffects.value.map((e) => {
+			const remaining = Math.max(0, Math.ceil((e.expiresAt - now) / 1000));
+			const info = EFFECT_LABELS[e.type]!;
+			return { ...e, label: info.label, color: info.color, remaining };
+		});
+	});
 
 	function clamp(val: number, min: number, max: number) {
 		return Math.min(Math.max(val, min), max);
@@ -356,15 +366,36 @@
 			ctx.fillStyle = colors.fill;
 			ctx.strokeStyle = colors.outline;
 			ctx.lineWidth = 2;
+
 			ctx.beginPath();
-			ctx.arc(ax, ay, radius, 0, Math.PI * 2);
+			ctx.arc(ax, ay + radius * 0.1, radius * 0.85, 0, Math.PI * 2);
 			ctx.fill();
 			ctx.stroke();
+
+			ctx.strokeStyle = '#4a7c59';
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.moveTo(ax, ay - radius * 0.7);
+			ctx.lineTo(ax, ay - radius * 0.2);
+			ctx.stroke();
+
+			ctx.fillStyle = '#54d978';
+			ctx.beginPath();
+			ctx.ellipse(
+				ax + radius * 0.3,
+				ay - radius * 0.5,
+				radius * 0.35,
+				radius * 0.2,
+				0.4,
+				0,
+				Math.PI * 2
+			);
+			ctx.fill();
 
 			if (apple.value.type === 'golden') {
 				ctx.fillStyle = GOLDEN_SHINE_COLOR;
 				ctx.beginPath();
-				ctx.arc(ax - radius * 0.3, ay - radius * 0.3, radius * 0.25, 0, Math.PI * 2);
+				ctx.arc(ax - radius * 0.3, ay - radius * 0.1, radius * 0.25, 0, Math.PI * 2);
 				ctx.fill();
 			}
 		}
@@ -557,6 +588,27 @@
 					class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakeCard grid justify-center border p-3.5 md:p-4.5"
 					aria-label="On-screen controls"
 				>
+					<div
+						v-if="activeEffectsList.length > 0"
+						class="mb-3 grid gap-1.5"
+					>
+						<div
+							v-for="effect in activeEffectsList"
+							:key="effect.type"
+							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 flex items-center justify-between border px-3 py-1.5"
+						>
+							<div class="flex items-center gap-2">
+								<AppleIcon
+									:size="14"
+									:color="effect.color"
+									aria-hidden="true"
+								/>
+								<span class="text-evosnake-text text-sm font-bold">{{ effect.label }}</span>
+							</div>
+							<span class="text-evosnake-muted font-mono text-xs">{{ effect.remaining }}s</span>
+						</div>
+					</div>
+
 					<div class="grid grid-cols-3 grid-rows-2 gap-2">
 						<button
 							class="arrow-key rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary hover:bg-evosnake-surface3 active:bg-evosnake-primary col-start-2 row-start-1 grid size-13.5 touch-manipulation place-items-center border text-2xl font-black select-none active:text-[#08100b] md:size-14.5"
