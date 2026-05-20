@@ -9,7 +9,12 @@ export async function submitScore(input: SubmitScoreBody): Promise<void> {
 	const weekStart = getWeekStart();
 	await prisma.score.create({
 		data: {
-			playerId: input.playerId,
+			player: {
+				connectOrCreate: {
+					where: { id: input.playerId },
+					create: { id: input.playerId }
+				}
+			},
 			score: input.score,
 			difficulty: input.difficulty,
 			weekStart
