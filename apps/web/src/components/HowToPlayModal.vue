@@ -24,40 +24,46 @@
 				@click="close"
 			/>
 			<div
-				class="relative z-10 w-full max-w-md rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-xl"
+				class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakePanel relative z-10 w-full max-w-md border p-6"
 			>
 				<div class="mb-4 flex items-center justify-between">
-					<div class="flex items-center gap-2 text-lg font-semibold text-gray-100">
-						<BookOpen class="h-5 w-5 text-emerald-500" />
+					<div class="text-evosnake-text flex items-center gap-2 text-lg font-semibold">
+						<BookOpen
+							class="text-evosnake-primary h-5 w-5"
+							aria-hidden="true"
+						/>
 						How to Play
 					</div>
 					<button
 						type="button"
-						class="rounded-lg p-1 text-gray-400 hover:text-gray-200"
+						class="text-evosnake-muted hover:text-evosnake-text rounded-lg p-1"
 						@click="close"
 					>
-						<X class="h-5 w-5" />
+						<X
+							class="h-5 w-5"
+							aria-hidden="true"
+						/>
 					</button>
 				</div>
-				<div class="space-y-3 text-sm text-gray-300">
+				<div class="text-evosnake-muted space-y-3 text-sm">
 					<p>
-						<strong class="text-gray-100">Controls:</strong>
+						<strong class="text-evosnake-text">Controls:</strong>
 						Use arrow keys or WASD to change the snake's direction.
 					</p>
 					<p>
-						<strong class="text-gray-100">Goal:</strong>
+						<strong class="text-evosnake-text">Goal:</strong>
 						Eat fruits to grow and increase your score. Don't hit the walls or yourself!
 					</p>
 					<p>
-						<strong class="text-gray-100">Fruits:</strong>
+						<strong class="text-evosnake-text">Fruits:</strong>
 						Different fruits give different points and may have special effects.
 					</p>
 					<p>
-						<strong class="text-gray-100">Difficulty:</strong>
+						<strong class="text-evosnake-text">Difficulty:</strong>
 						Higher difficulties increase the snake's speed and challenge.
 					</p>
 					<p>
-						<strong class="text-gray-100">Leaderboard:</strong>
+						<strong class="text-evosnake-text">Leaderboard:</strong>
 						Your best score each week is tracked. Rankings reset weekly (Monday, Taipei time).
 					</p>
 				</div>

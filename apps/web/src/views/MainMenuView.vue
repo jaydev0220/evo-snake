@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { User, Play, Bug, BookOpen } from '@lucide/vue';
+	import { Play, CircleHelp, Bug } from '@lucide/vue';
 	import { ref, onMounted } from 'vue';
 
 	import DifficultySelector from '../components/DifficultySelector.vue';
@@ -30,59 +30,93 @@
 </script>
 
 <template>
-	<div class="flex min-h-screen flex-col items-center justify-center bg-gray-950 px-4 py-8">
-		<div class="w-full max-w-md space-y-6">
-			<h1 class="text-center text-4xl font-bold tracking-tight text-emerald-400">🐍 EvoSnake</h1>
+	<main
+		class="bg-evosnake-bg text-evosnake-text grid min-h-screen place-items-center px-4 py-5 md:px-6"
+	>
+		<section
+			class="grid w-full max-w-[960px] gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_340px]"
+			aria-label="EvoSnake main menu"
+		>
+			<div
+				class="bg-evosnake-surface border-evosnake-border rounded-evosnakePanel shadow-evosnakePanel grid content-center gap-7 border p-5 md:p-8 lg:min-h-[520px]"
+			>
+				<h1
+					class="flex items-center justify-center gap-2 text-[clamp(42px,14vw,64px)] leading-none font-black tracking-[-0.06em] md:justify-start md:gap-4 md:text-[clamp(48px,8vw,84px)]"
+				>
+					<span
+						aria-hidden="true"
+						class="text-[0.72em] tracking-normal"
+					>
+						🐍
+					</span>
+					<span>EvoSnake</span>
+				</h1>
 
-			<div class="space-y-4">
-				<div class="flex items-center gap-2">
-					<User class="h-4 w-4 text-gray-400" />
-					<input
-						v-model="store.playerName"
-						type="text"
-						placeholder="Enter your name"
-						class="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-gray-100 placeholder-gray-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-						maxlength="20"
-					/>
+				<div class="grid gap-7">
+					<label class="grid gap-2">
+						<span class="text-evosnake-muted text-xs font-bold tracking-wide uppercase">
+							Player name
+						</span>
+						<input
+							v-model="store.playerName"
+							type="text"
+							maxlength="20"
+							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text focus:border-evosnake-primary focus:ring-evosnake-primary/20 min-h-12 border px-3.5 text-base outline-none focus:ring-4"
+						/>
+					</label>
+
+					<DifficultySelector v-model="store.selectedDifficulty" />
+
+					<div class="grid grid-cols-1 gap-2.5 md:grid-cols-3">
+						<button
+							type="button"
+							:disabled="!store.playerName.trim()"
+							class="rounded-evosnake bg-evosnake-primary hover:bg-evosnake-primaryHover min-h-[50px] px-4 text-sm font-extrabold text-[#08100b] disabled:cursor-not-allowed disabled:opacity-40"
+							@click="handlePlay"
+						>
+							<span class="inline-flex w-full items-center justify-center gap-2">
+								<Play
+									class="h-4 w-4"
+									aria-hidden="true"
+								/>
+								<span>Play</span>
+							</span>
+						</button>
+
+						<button
+							type="button"
+							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary min-h-[50px] border px-4 text-sm font-extrabold"
+							@click="showHowToPlay = true"
+						>
+							<span class="inline-flex w-full items-center justify-center gap-2">
+								<CircleHelp
+									class="h-4 w-4"
+									aria-hidden="true"
+								/>
+								<span>How to Play</span>
+							</span>
+						</button>
+
+						<button
+							type="button"
+							class="rounded-evosnake border-evosnake-danger hover:border-evosnake-dangerHover hover:bg-evosnake-danger/10 min-h-[50px] border bg-transparent px-4 text-sm font-extrabold text-red-100"
+							@click="openBugReport"
+						>
+							<span class="inline-flex w-full items-center justify-center gap-2">
+								<Bug
+									class="h-4 w-4"
+									aria-hidden="true"
+								/>
+								<span>Report Bug</span>
+							</span>
+						</button>
+					</div>
 				</div>
-
-				<DifficultySelector v-model="store.selectedDifficulty" />
-
-				<button
-					type="button"
-					:disabled="!store.playerName.trim()"
-					class="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
-					@click="handlePlay"
-				>
-					<Play class="h-4 w-4" />
-					Play
-				</button>
 			</div>
 
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-4">
-				<LeaderboardPanel />
-			</div>
-
-			<div class="flex gap-3">
-				<button
-					type="button"
-					class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:border-gray-600 hover:text-gray-200"
-					@click="showHowToPlay = true"
-				>
-					<BookOpen class="h-4 w-4" />
-					How to Play
-				</button>
-				<button
-					type="button"
-					class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:border-gray-600 hover:text-gray-200"
-					@click="openBugReport"
-				>
-					<Bug class="h-4 w-4" />
-					Report Bug
-				</button>
-			</div>
-		</div>
+			<LeaderboardPanel />
+		</section>
 
 		<HowToPlayModal v-model="showHowToPlay" />
-	</div>
+	</main>
 </template>

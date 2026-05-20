@@ -1,0 +1,19 @@
+@import 'tailwindcss';
+
+@theme {
+	--color-evosnake-bg: #0f1411;
+	--color-evosnake-surface: #171f1a;
+	--color-evosnake-surface2: #1f2a23;
+	--color-evosnake-border: #314238;
+	--color-evosnake-text: #f2f7f3;
+	--color-evosnake-muted: #9eafa5;
+	--color-evosnake-primary: #54d978;
+	--color-evosnake-primaryHover: #68ec8b;
+	--color-evosnake-danger: #e05f5f;
+	--color-evosnake-dangerHover: #f17171;
+
+	--radius-evosnake: 14px;
+	--radius-evosnakePanel: 20px;
+
+	--shadow-evosnakePanel: 0 18px 60px rgba(0, 0, 0, 0.35);
+}
