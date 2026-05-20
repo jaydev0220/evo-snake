@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { Play, CircleHelp, Bug } from '@lucide/vue';
+	import { Play, Bug, BookOpen } from '@lucide/vue';
 	import { ref, onMounted } from 'vue';
 
 	import DifficultySelector from '../components/DifficultySelector.vue';
@@ -89,7 +89,7 @@
 							@click="showHowToPlay = true"
 						>
 							<span class="inline-flex w-full items-center justify-center gap-2">
-								<CircleHelp
+								<BookOpen
 									class="h-4 w-4"
 									aria-hidden="true"
 								/>
