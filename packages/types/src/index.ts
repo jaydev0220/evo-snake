@@ -1,19 +1,19 @@
-export type Difficulty = 'easy' | 'normal' | 'hard' | 'asian';
+import type { z } from 'zod';
 
-export interface SubmitScoreBody {
-	playerId: string;
-	score: number;
-	difficulty: Difficulty;
-}
+import {
+	difficultyEnum,
+	submitScoreSchema,
+	leaderboardQuerySchema,
+	meQuerySchema,
+} from './schemas';
 
-export interface LeaderboardQuery {
-	difficulty: Difficulty;
-}
+export type Difficulty = z.infer<typeof difficultyEnum>;
 
-export interface MeQuery {
-	playerId: string;
-	difficulty: Difficulty;
-}
+export type SubmitScoreBody = z.infer<typeof submitScoreSchema>;
+
+export type LeaderboardQuery = z.infer<typeof leaderboardQuerySchema>;
+
+export type MeQuery = z.infer<typeof meQuerySchema>;
 
 export interface LeaderboardEntry {
 	rank: number;
