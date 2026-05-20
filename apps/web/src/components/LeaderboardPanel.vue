@@ -40,18 +40,18 @@
 				:key="entry.playerId"
 				:class="[
 					'rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid grid-cols-[34px_1fr_auto] items-center gap-2.5 border p-3',
-					entry.playerId === store.sessionUUID ? 'border-evosnake-primary' : ''
+					entry.playerId === store.playerId ? 'border-evosnake-primary' : ''
 				]"
 			>
 				<div class="text-evosnake-muted font-extrabold">{{ entry.rank }}</div>
 				<div class="truncate font-bold">
-					{{ entry.playerId === store.sessionUUID ? 'You' : 'Player' }}
+					{{ entry.playerId === store.playerId ? 'You' : 'Player' }}
 				</div>
 				<div class="text-evosnake-primary font-extrabold">{{ entry.score.toLocaleString() }}</div>
 			</div>
 
 			<div
-				v-if="store.myRank && !store.leaderboard.some((e) => e.playerId === store.sessionUUID)"
+				v-if="store.myRank && !store.leaderboard.some((e) => e.playerId === store.playerId)"
 				class="border-evosnake-border mt-2 border-t pt-2"
 			>
 				<div

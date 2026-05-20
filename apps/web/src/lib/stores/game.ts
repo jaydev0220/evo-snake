@@ -17,15 +17,15 @@ function generateUUID(): string {
 export const useGameStore = defineStore('game', () => {
 	const playerName = ref('');
 	const selectedDifficulty = ref<Difficulty>('easy');
-	const sessionUUID = ref(localStorage.getItem('evo-snake-session') || generateUUID());
+	const playerId = ref(localStorage.getItem('evosnake_player_id') || generateUUID());
 
 	const leaderboard = ref<LeaderboardEntry[]>([]);
 	const myRank = ref<PlayerRank | null>(null);
 	const isLoading = ref(false);
 	const error = ref<string | null>(null);
 
-	if (!localStorage.getItem('evo-snake-session')) {
-		localStorage.setItem('evo-snake-session', sessionUUID.value);
+	if (!localStorage.getItem('evosnake_player_id')) {
+		localStorage.setItem('evosnake_player_id', playerId.value);
 	}
 
 	function setPlayerName(name: string) {
@@ -53,18 +53,18 @@ export const useGameStore = defineStore('game', () => {
 	async function loadMyRank() {
 		if (!playerName.value) return;
 		try {
-			myRank.value = await fetchMyRank(sessionUUID.value, selectedDifficulty.value);
+			myRank.value = await fetchMyRank(playerId.value, selectedDifficulty.value);
 		} catch {
 			myRank.value = null;
 		}
 	}
 
-	async function postScore(score: number) {
+	async function postScore(score: number, difficulty: Difficulty) {
 		try {
 			await submitScore({
-				playerId: sessionUUID.value,
+				playerId: playerId.value,
 				score,
-				difficulty: selectedDifficulty.value
+				difficulty
 			});
 			await loadLeaderboard();
 		} catch (e) {
@@ -75,7 +75,7 @@ export const useGameStore = defineStore('game', () => {
 	return {
 		playerName,
 		selectedDifficulty,
-		sessionUUID,
+		playerId,
 		leaderboard,
 		myRank,
 		isLoading,

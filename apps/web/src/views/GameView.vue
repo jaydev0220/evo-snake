@@ -10,7 +10,6 @@
 	} from '@lucide/vue';
 	import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue';
 
-	import { submitScore } from '../lib/api';
 	import {
 		DIFFICULTIES,
 		APPLE_COLORS,
@@ -39,12 +38,15 @@
 		type ActiveEffect,
 		type Apple
 	} from '../lib/data';
+	import { useGameStore } from '../lib/stores/game';
 
 	const emit = defineEmits<{
 		back: [];
 	}>();
 
-	const difficulty = ref<keyof typeof DIFFICULTIES>('normal');
+	const store = useGameStore();
+
+	const difficulty = computed(() => store.selectedDifficulty);
 	const status = ref<GameStatus>('playing');
 	const snakeBody = ref<Position[]>([]);
 	const snakeDirection = ref<Direction>('right');
@@ -511,16 +513,7 @@
 		isUploading.value = true;
 		uploadError.value = null;
 		try {
-			let playerId = localStorage.getItem('evosnake_player_id');
-			if (!playerId) {
-				playerId = crypto.randomUUID();
-				localStorage.setItem('evosnake_player_id', playerId);
-			}
-			await submitScore({
-				playerId,
-				score: score.value,
-				difficulty: difficulty.value as 'easy' | 'normal' | 'hard' | 'asian'
-			});
+			await store.postScore(score.value, difficulty.value);
 		} catch (err) {
 			uploadError.value = err instanceof Error ? err.message : 'Failed to upload score';
 		} finally {
