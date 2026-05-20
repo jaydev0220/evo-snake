@@ -1,6 +1,7 @@
 # Bug Report Guide
 
 Use this guide when creating a bug report for EvoSnake.
+Open issue at [here](https://github.com/jaydev0220/evo-snake/issues).
 
 ## Before Reporting
 
