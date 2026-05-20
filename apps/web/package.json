@@ -15,8 +15,7 @@
 		"format": "oxfmt src/"
 	},
 	"dependencies": {
-		"vue": "catalog:web",
-		"vue-router": "catalog:web"
+		"vue": "catalog:web"
 	},
 	"devDependencies": {
 		"@lucide/vue": "catalog:api",
