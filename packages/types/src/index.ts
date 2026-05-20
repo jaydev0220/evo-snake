@@ -18,6 +18,7 @@ export type MeQuery = z.infer<typeof meQuerySchema>;
 export interface LeaderboardEntry {
 	rank: number;
 	playerId: string;
+	playerName: string;
 	score: number;
 	difficulty: string;
 	createdAt: string;
@@ -31,6 +32,7 @@ export interface LeaderboardResponse {
 export interface PlayerRank {
 	rank: number;
 	playerId: string;
+	playerName: string;
 	score: number;
 	difficulty: string;
 }

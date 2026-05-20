@@ -10,8 +10,8 @@ export async function submitScore(input: SubmitScoreBody): Promise<void> {
 
 	await prisma.player.upsert({
 		where: { id: input.playerId },
-		create: { id: input.playerId },
-		update: {}
+		create: { id: input.playerId, name: input.playerName },
+		update: { name: input.playerName }
 	});
 
 	await prisma.score.create({
@@ -49,9 +49,17 @@ export async function getLeaderboard(
 		take: LEADERBOARD_LIMIT
 	});
 
+	const playerIds = rawScores.map((r) => r.playerId);
+	const players = await prisma.player.findMany({
+		where: { id: { in: playerIds } },
+		select: { id: true, name: true }
+	});
+	const playerMap = new Map(players.map((p) => [p.id, p.name]));
+
 	const data: LeaderboardEntry[] = rawScores.map((entry, index) => ({
 		rank: index + 1,
 		playerId: entry.playerId,
+		playerName: playerMap.get(entry.playerId) ?? 'Unknown',
 		score: entry._max.score ?? 0,
 		difficulty,
 		createdAt: entry._min.createdAt!.toISOString()
@@ -109,9 +117,15 @@ export async function getPlayerRank(
 		}
 	}
 
+	const player = await prisma.player.findUnique({
+		where: { id: playerId },
+		select: { name: true }
+	});
+
 	return {
 		rank,
 		playerId,
+		playerName: player?.name ?? 'Unknown',
 		score: playerScore,
 		difficulty
 	};

@@ -45,7 +45,7 @@
 			>
 				<div class="text-evosnake-muted font-extrabold">{{ entry.rank }}</div>
 				<div class="truncate font-bold">
-					{{ entry.playerId === store.playerId ? 'You' : 'Player' }}
+					{{ entry.playerId === store.playerId ? 'You' : entry.playerName }}
 				</div>
 				<div class="text-evosnake-primary font-extrabold">{{ entry.score.toLocaleString() }}</div>
 			</div>

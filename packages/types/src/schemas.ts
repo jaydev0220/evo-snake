@@ -4,6 +4,7 @@ export const difficultyEnum = z.enum(['easy', 'normal', 'hard', 'asian']);
 
 export const submitScoreSchema = z.object({
 	playerId: z.uuid(),
+	playerName: z.string().min(1).max(20),
 	score: z.int().min(0),
 	difficulty: difficultyEnum,
 });

@@ -13,6 +13,7 @@ datasource db {
 
 model Player {
   id        String   @id @default(uuid())
+  name      String
   createdAt DateTime @default(now())
   scores    Score[]
 }

@@ -1,6 +1,6 @@
 import type { Difficulty, LeaderboardEntry, PlayerRank } from '@packages/types';
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 import { fetchLeaderboard, fetchMyRank, submitScore } from '../api';
 
@@ -27,6 +27,10 @@ export const useGameStore = defineStore('game', () => {
 	if (!localStorage.getItem('evosnake_player_id')) {
 		localStorage.setItem('evosnake_player_id', playerId.value);
 	}
+
+	watch(selectedDifficulty, () => {
+		loadLeaderboard();
+	});
 
 	function setPlayerName(name: string) {
 		playerName.value = name;
@@ -63,6 +67,7 @@ export const useGameStore = defineStore('game', () => {
 		try {
 			await submitScore({
 				playerId: playerId.value,
+				playerName: playerName.value,
 				score,
 				difficulty
 			});
