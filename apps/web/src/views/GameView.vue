@@ -1,7 +1,16 @@
 <script setup lang="ts">
-	import { Apple as AppleIcon, ArrowLeft } from '@lucide/vue';
-	import { ref, onMounted, onUnmounted, computed } from 'vue';
+	import {
+		Apple as AppleIcon,
+		ArrowDown,
+		ArrowLeft as ArrowLeftIcon,
+		ArrowRight,
+		ArrowUp,
+		Trophy,
+		X
+	} from '@lucide/vue';
+	import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue';
 
+	import { submitScore } from '../lib/api';
 	import {
 		DIFFICULTIES,
 		APPLE_COLORS,
@@ -22,7 +31,6 @@
 		SNAKE_COLORS,
 		GRID_COLOR,
 		BOARD_BG,
-		GOLDEN_SHINE_COLOR,
 		EFFECT_LABELS,
 		type Direction,
 		type AppleType,
@@ -49,6 +57,11 @@
 	const gameLoop = ref<number | null>(null);
 	const appleTimer = ref<number | null>(null);
 	const canvasRef = ref<HTMLCanvasElement | null>(null);
+	const applePositions = ref<Map<string, { x: number; y: number }>>(new Map());
+
+	const showGameOver = ref(false);
+	const isUploading = ref(false);
+	const uploadError = ref<string | null>(null);
 
 	const currentConfig = computed(() => DIFFICULTIES[difficulty.value]);
 	const mapWidth = computed(() => currentConfig.value!.mapWidth);
@@ -357,48 +370,48 @@
 			ctx.globalAlpha = 1;
 		}
 
-		if (apple.value) {
-			const colors = APPLE_COLORS[apple.value.type];
-			const ax = apple.value.position.x * cellWidth + cellWidth / 2;
-			const ay = apple.value.position.y * cellHeight + cellHeight / 2;
-			const radius = cellWidth / 2 - 2;
+		const head = snakeBody.value[0];
+		if (head) {
+			ctx.fillStyle = '#ffffff';
+			const eyeOffsetX = cellWidth * 0.2;
+			const eyeOffsetY = cellHeight * 0.2;
+			const eyeRadius = Math.min(cellWidth, cellHeight) * 0.1;
 
-			ctx.fillStyle = colors.fill;
-			ctx.strokeStyle = colors.outline;
-			ctx.lineWidth = 2;
+			const dirVec = directionToVector(snakeDirection.value);
+			let eye1X: number, eye1Y: number, eye2X: number, eye2Y: number;
 
-			ctx.beginPath();
-			ctx.arc(ax, ay + radius * 0.1, radius * 0.85, 0, Math.PI * 2);
-			ctx.fill();
-			ctx.stroke();
-
-			ctx.strokeStyle = '#4a7c59';
-			ctx.lineWidth = 2;
-			ctx.beginPath();
-			ctx.moveTo(ax, ay - radius * 0.7);
-			ctx.lineTo(ax, ay - radius * 0.2);
-			ctx.stroke();
-
-			ctx.fillStyle = '#54d978';
-			ctx.beginPath();
-			ctx.ellipse(
-				ax + radius * 0.3,
-				ay - radius * 0.5,
-				radius * 0.35,
-				radius * 0.2,
-				0.4,
-				0,
-				Math.PI * 2
-			);
-			ctx.fill();
-
-			if (apple.value.type === 'golden') {
-				ctx.fillStyle = GOLDEN_SHINE_COLOR;
-				ctx.beginPath();
-				ctx.arc(ax - radius * 0.3, ay - radius * 0.1, radius * 0.25, 0, Math.PI * 2);
-				ctx.fill();
+			if (dirVec.x !== 0) {
+				eye1X = head.x * cellWidth + cellWidth * 0.5 + dirVec.x * eyeOffsetX;
+				eye1Y = head.y * cellHeight + cellHeight * 0.3;
+				eye2X = head.x * cellWidth + cellWidth * 0.5 + dirVec.x * eyeOffsetX;
+				eye2Y = head.y * cellHeight + cellHeight * 0.7;
+			} else {
+				eye1X = head.x * cellWidth + cellWidth * 0.3;
+				eye1Y = head.y * cellHeight + cellHeight * 0.5 + dirVec.y * eyeOffsetY;
+				eye2X = head.x * cellWidth + cellWidth * 0.7;
+				eye2Y = head.y * cellHeight + cellHeight * 0.5 + dirVec.y * eyeOffsetY;
 			}
+
+			ctx.beginPath();
+			ctx.arc(eye1X, eye1Y, eyeRadius, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.beginPath();
+			ctx.arc(eye2X, eye2Y, eyeRadius, 0, Math.PI * 2);
+			ctx.fill();
 		}
+
+		applePositions.value = new Map();
+		if (apple.value) {
+			const px = (apple.value.position.x / mapWidth.value) * 100;
+			const py = (apple.value.position.y / mapHeight.value) * 100;
+			applePositions.value.set(apple.value.type, { x: px, y: py });
+		}
+	}
+
+	function triggerGameOver() {
+		status.value = 'gameOver';
+		stopGame();
+		showGameOver.value = true;
 	}
 
 	function updateGame() {
@@ -421,18 +434,14 @@
 			newHead.y < 0 ||
 			newHead.y >= mapHeight.value
 		) {
-			status.value = 'gameOver';
-			stopGame();
-			emit('back');
+			triggerGameOver();
 			return;
 		}
 
 		if (!isGhostActive.value) {
 			for (const segment of snakeBody.value) {
 				if (segment.x === newHead.x && segment.y === newHead.y) {
-					status.value = 'gameOver';
-					stopGame();
-					emit('back');
+					triggerGameOver();
 					return;
 				}
 			}
@@ -482,6 +491,8 @@
 		activeEffects.value = [];
 		apple.value = spawnApple();
 		status.value = 'playing';
+		showGameOver.value = false;
+		uploadError.value = null;
 
 		resizeCanvas();
 		drawGame();
@@ -489,6 +500,40 @@
 
 		gameLoop.value = window.setInterval(updateGame, currentTickMs.value);
 	}
+
+	async function handleUploadScore() {
+		isUploading.value = true;
+		uploadError.value = null;
+		try {
+			const playerId = localStorage.getItem('evosnake_player_id') || 'anonymous';
+			await submitScore({
+				playerId,
+				score: score.value,
+				difficulty: difficulty.value as 'easy' | 'normal' | 'hard' | 'asian'
+			});
+		} catch (err) {
+			uploadError.value = err instanceof Error ? err.message : 'Failed to upload score';
+		} finally {
+			isUploading.value = false;
+		}
+	}
+
+	function handleCloseGameOver() {
+		showGameOver.value = false;
+		emit('back');
+	}
+
+	function handlePlayAgain() {
+		showGameOver.value = false;
+		initGame();
+	}
+
+	watch(showGameOver, async (open) => {
+		if (open) {
+			await nextTick();
+			await handleUploadScore();
+		}
+	});
 
 	onMounted(() => {
 		window.addEventListener('keydown', handleKeydown);
@@ -517,7 +562,7 @@
 					class="rounded-evosnake border-evosnake-border bg-evosnake-surface text-evosnake-muted hover:border-evosnake-primary hover:text-evosnake-text flex items-center gap-1 border px-3 py-2 text-sm transition-colors"
 					@click="emit('back')"
 				>
-					<ArrowLeft
+					<ArrowLeftIcon
 						class="h-4 w-4"
 						aria-hidden="true"
 					/>
@@ -580,71 +625,207 @@
 								ref="canvasRef"
 								class="block size-full"
 							/>
+
+							<div
+								v-for="[type, pos] in Array.from(applePositions.entries())"
+								:key="type"
+								class="pointer-events-none absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center"
+								:style="{
+									left: `${pos.x}%`,
+									top: `${pos.y}%`,
+									width: `${100 / mapWidth}%`,
+									height: `${100 / mapHeight}%`
+								}"
+							>
+								<AppleIcon
+									:size="Math.min(28, (100 / mapWidth) * 4)"
+									:color="APPLE_COLORS[type as AppleType].outline"
+									:fill="APPLE_COLORS[type as AppleType].fill"
+								/>
+							</div>
 						</div>
 					</section>
 				</div>
 
-				<section
-					class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakeCard grid justify-center border p-3.5 md:p-4.5"
-					aria-label="On-screen controls"
-				>
-					<div
+				<div class="grid min-w-0 gap-4">
+					<section
 						v-if="activeEffectsList.length > 0"
-						class="mb-3 grid gap-1.5"
+						class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakeCard border p-3.5 md:p-4.5"
+						aria-label="Active effects"
 					>
-						<div
-							v-for="effect in activeEffectsList"
-							:key="effect.type"
-							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 flex items-center justify-between border px-3 py-1.5"
-						>
-							<div class="flex items-center gap-2">
-								<AppleIcon
-									:size="14"
-									:color="effect.color"
-									aria-hidden="true"
-								/>
-								<span class="text-evosnake-text text-sm font-bold">{{ effect.label }}</span>
+						<div class="text-evosnake-muted mb-2 text-xs font-extrabold tracking-wider uppercase">
+							Active Effects
+						</div>
+						<div class="grid gap-1.5">
+							<div
+								v-for="effect in activeEffectsList"
+								:key="effect.type"
+								class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 flex items-center justify-between border px-3 py-1.5"
+							>
+								<div class="flex items-center gap-2">
+									<AppleIcon
+										:size="14"
+										:color="effect.color"
+										aria-hidden="true"
+									/>
+									<span class="text-evosnake-text text-sm font-bold">{{ effect.label }}</span>
+								</div>
+								<span class="text-evosnake-muted font-mono text-xs">{{ effect.remaining }}s</span>
 							</div>
-							<span class="text-evosnake-muted font-mono text-xs">{{ effect.remaining }}s</span>
+						</div>
+					</section>
+
+					<section
+						class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakeCard grid justify-center border p-3.5 md:p-4.5"
+						aria-label="On-screen controls"
+					>
+						<div class="grid grid-cols-3 grid-rows-2 gap-2">
+							<button
+								class="arrow-key rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary hover:bg-evosnake-surface3 active:bg-evosnake-primary col-start-2 row-start-1 grid size-13.5 touch-manipulation place-items-center border text-2xl font-black select-none active:text-[#08100b] md:size-14.5"
+								type="button"
+								aria-label="Move up"
+								@click="setDirection('up')"
+							>
+								<ArrowUp :size="20" />
+							</button>
+							<button
+								class="arrow-key rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary hover:bg-evosnake-surface3 active:bg-evosnake-primary col-start-1 row-start-2 grid size-13.5 touch-manipulation place-items-center border text-2xl font-black select-none active:text-[#08100b] md:size-14.5"
+								type="button"
+								aria-label="Move left"
+								@click="setDirection('left')"
+							>
+								<ArrowLeftIcon :size="20" />
+							</button>
+							<button
+								class="arrow-key rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary hover:bg-evosnake-surface3 active:bg-evosnake-primary col-start-2 row-start-2 grid size-13.5 touch-manipulation place-items-center border text-2xl font-black select-none active:text-[#08100b] md:size-14.5"
+								type="button"
+								aria-label="Move down"
+								@click="setDirection('down')"
+							>
+								<ArrowDown :size="20" />
+							</button>
+							<button
+								class="arrow-key rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary hover:bg-evosnake-surface3 active:bg-evosnake-primary col-start-3 row-start-2 grid size-13.5 touch-manipulation place-items-center border text-2xl font-black select-none active:text-[#08100b] md:size-14.5"
+								type="button"
+								aria-label="Move right"
+								@click="setDirection('right')"
+							>
+								<ArrowRight :size="20" />
+							</button>
+						</div>
+					</section>
+				</div>
+			</section>
+		</section>
+
+		<Teleport to="body">
+			<div
+				v-if="showGameOver"
+				class="fixed inset-0 z-50 grid place-items-center bg-black/70 px-4 py-5"
+			>
+				<section
+					role="dialog"
+					aria-modal="true"
+					aria-labelledby="game-over-title"
+					class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakePanel w-full max-w-md border p-6"
+				>
+					<div class="mb-4 flex items-center justify-between">
+						<h2
+							id="game-over-title"
+							class="text-evosnake-text flex items-center gap-2 text-xl font-extrabold"
+						>
+							<Trophy
+								class="text-evosnake-primary h-6 w-6"
+								aria-hidden="true"
+							/>
+							Game Over
+						</h2>
+						<button
+							type="button"
+							aria-label="Close game over"
+							class="text-evosnake-muted hover:text-evosnake-text rounded-lg p-1"
+							@click="handleCloseGameOver"
+						>
+							<X
+								class="h-5 w-5"
+								aria-hidden="true"
+							/>
+						</button>
+					</div>
+
+					<div class="mb-5 grid gap-3">
+						<div
+							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid gap-1 border px-4 py-3"
+						>
+							<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
+								Final Score
+							</div>
+							<div class="text-evosnake-text text-2xl font-black">
+								{{ score.toLocaleString() }}
+							</div>
+						</div>
+
+						<div class="grid grid-cols-2 gap-3">
+							<div
+								class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid gap-1 border px-3 py-2.5"
+							>
+								<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
+									Mode
+								</div>
+								<div class="text-evosnake-text text-sm font-bold">
+									{{ currentConfig!.label }}
+								</div>
+							</div>
+							<div
+								class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid gap-1 border px-3 py-2.5"
+							>
+								<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
+									Length
+								</div>
+								<div class="text-evosnake-text text-sm font-bold">
+									{{ snakeBody.length }}
+								</div>
+							</div>
+						</div>
+
+						<div
+							v-if="uploadError"
+							class="rounded-evosnake border-evosnake-danger bg-evosnake-danger/10 text-evosnake-danger border px-3 py-2 text-sm"
+						>
+							{{ uploadError }}
+						</div>
+						<div
+							v-else-if="isUploading"
+							class="text-evosnake-muted text-center text-sm"
+						>
+							Uploading score...
+						</div>
+						<div
+							v-else
+							class="text-evosnake-primary text-center text-sm"
+						>
+							Score uploaded
 						</div>
 					</div>
 
-					<div class="grid grid-cols-3 grid-rows-2 gap-2">
+					<div class="grid grid-cols-2 gap-3">
 						<button
-							class="arrow-key rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary hover:bg-evosnake-surface3 active:bg-evosnake-primary col-start-2 row-start-1 grid size-13.5 touch-manipulation place-items-center border text-2xl font-black select-none active:text-[#08100b] md:size-14.5"
 							type="button"
-							aria-label="Move up"
-							@click="setDirection('up')"
+							class="rounded-evosnake bg-evosnake-primary hover:bg-evosnake-primaryHover px-4 py-2.5 font-bold text-[#08100b] transition-colors"
+							@click="handlePlayAgain"
 						>
-							↑
+							Play Again
 						</button>
 						<button
-							class="arrow-key rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary hover:bg-evosnake-surface3 active:bg-evosnake-primary col-start-1 row-start-2 grid size-13.5 touch-manipulation place-items-center border text-2xl font-black select-none active:text-[#08100b] md:size-14.5"
 							type="button"
-							aria-label="Move left"
-							@click="setDirection('left')"
+							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary border px-4 py-2.5 font-bold transition-colors"
+							@click="handleCloseGameOver"
 						>
-							←
-						</button>
-						<button
-							class="arrow-key rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary hover:bg-evosnake-surface3 active:bg-evosnake-primary col-start-2 row-start-2 grid size-13.5 touch-manipulation place-items-center border text-2xl font-black select-none active:text-[#08100b] md:size-14.5"
-							type="button"
-							aria-label="Move down"
-							@click="setDirection('down')"
-						>
-							↓
-						</button>
-						<button
-							class="arrow-key rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary hover:bg-evosnake-surface3 active:bg-evosnake-primary col-start-3 row-start-2 grid size-13.5 touch-manipulation place-items-center border text-2xl font-black select-none active:text-[#08100b] md:size-14.5"
-							type="button"
-							aria-label="Move right"
-							@click="setDirection('right')"
-						>
-							→
+							Main Menu
 						</button>
 					</div>
 				</section>
-			</section>
-		</section>
+			</div>
+		</Teleport>
 	</main>
 </template>
