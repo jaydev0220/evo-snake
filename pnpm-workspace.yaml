@@ -41,6 +41,8 @@ catalogs:
     vue-tsc: ^3.2.6
     vue: ^3.5.32
     vue-router: ^5.0.4
+    tailwindcss: ^4.3.0
+    '@tailwindcss/vite': ^4.3.0
 
 allowBuilds:
   '@prisma/engines': true

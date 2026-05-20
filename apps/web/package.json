@@ -21,6 +21,7 @@
 	"devDependencies": {
 		"@lucide/vue": "catalog:api",
 		"@packages/configs": "workspace:*",
+		"@tailwindcss/vite": "catalog:web",
 		"@tsconfig/node24": "catalog:",
 		"@types/node": "catalog:",
 		"@vitejs/plugin-vue": "catalog:web",
@@ -34,6 +35,7 @@
 		"npm-run-all2": "catalog:web",
 		"oxfmt": "catalog:",
 		"oxlint": "catalog:",
+		"tailwindcss": "catalog:web",
 		"typescript": "catalog:",
 		"vite": "catalog:web",
 		"vite-plugin-vue-devtools": "catalog:web",
