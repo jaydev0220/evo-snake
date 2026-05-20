@@ -2,77 +2,38 @@
 	import { ArrowLeft } from '@lucide/vue';
 	import { ref, onMounted, onUnmounted, computed } from 'vue';
 
+	import {
+		DIFFICULTIES,
+		APPLE_COLORS,
+		APPLE_SPAWN_WEIGHTS,
+		BASE_POINTS,
+		MIN_SNAKE_LENGTH,
+		STARTING_SNAKE_LENGTH,
+		MIN_POINTS_MULTIPLIER,
+		MAX_POINTS_MULTIPLIER,
+		TURBO_DURATION_MS,
+		TURBO_POINTS_DELTA,
+		CHILL_DURATION_MS,
+		CHILL_POINTS_DELTA,
+		GHOST_DURATION_MS,
+		SHRINK_LENGTH_DELTA,
+		CLASSIC_LENGTH_DELTA,
+		GOLDEN_SCORE_MULTIPLIER,
+		SNAKE_COLORS,
+		GRID_COLOR,
+		BOARD_BG,
+		GOLDEN_SHINE_COLOR,
+		type Direction,
+		type AppleType,
+		type GameStatus,
+		type Position,
+		type ActiveEffect,
+		type Apple,
+	} from '../lib/data';
+
 	const emit = defineEmits<{
 		back: [];
 	}>();
-
-	type Direction = 'up' | 'down' | 'left' | 'right';
-	type AppleType = 'classic' | 'shrink' | 'turbo' | 'chill' | 'ghost' | 'golden';
-	type GameStatus = 'idle' | 'playing' | 'paused' | 'gameOver';
-
-	interface Position {
-		x: number;
-		y: number;
-	}
-
-	interface ActiveEffect {
-		type: 'turbo' | 'chill' | 'ghost';
-		startedAt: number;
-		durationMs: number;
-		expiresAt: number;
-	}
-
-	interface Apple {
-		type: AppleType;
-		position: Position;
-		spawnedAt: number;
-		expiresAt: number | null;
-	}
-
-	interface DifficultyConfig {
-		label: string;
-		mapWidth: number;
-		mapHeight: number;
-		tickMs: number;
-		specialAppleLifetimeMs: number;
-	}
-
-	const DIFFICULTIES: Record<string, DifficultyConfig> = {
-		easy: { label: 'Easy', mapWidth: 24, mapHeight: 24, tickMs: 160, specialAppleLifetimeMs: 9000 },
-		normal: {
-			label: 'Normal',
-			mapWidth: 20,
-			mapHeight: 20,
-			tickMs: 120,
-			specialAppleLifetimeMs: 7500
-		},
-		hard: { label: 'Hard', mapWidth: 16, mapHeight: 16, tickMs: 90, specialAppleLifetimeMs: 6000 },
-		asian: { label: 'Asian', mapWidth: 14, mapHeight: 14, tickMs: 70, specialAppleLifetimeMs: 4500 }
-	};
-
-	const APPLE_COLORS: Record<AppleType, { fill: string; outline: string }> = {
-		classic: { fill: '#E53935', outline: '#9F1D1D' },
-		shrink: { fill: '#8E44AD', outline: '#4C1D95' },
-		turbo: { fill: '#F97316', outline: '#9A3412' },
-		chill: { fill: '#38BDF8', outline: '#0369A1' },
-		ghost: { fill: '#E0F2FE', outline: '#7DD3FC' },
-		golden: { fill: '#FACC15', outline: '#B45309' }
-	};
-
-	const APPLE_SPAWN_WEIGHTS: Record<AppleType, number> = {
-		classic: 60,
-		shrink: 10,
-		turbo: 10,
-		chill: 8,
-		ghost: 5,
-		golden: 7
-	};
-
-	const BASE_POINTS = 20;
-	const MIN_SNAKE_LENGTH = 3;
-	const STARTING_SNAKE_LENGTH = 3;
-	const MIN_POINTS_MULTIPLIER = 0.25;
-	const MAX_POINTS_MULTIPLIER = 3.0;
 
 	const difficulty = ref<keyof typeof DIFFICULTIES>('normal');
 	const status = ref<GameStatus>('playing');
@@ -89,16 +50,16 @@
 	const canvasRef = ref<HTMLCanvasElement | null>(null);
 
 	const currentConfig = computed(() => DIFFICULTIES[difficulty.value]);
-const mapWidth = computed(() => currentConfig.value!.mapWidth);
-const mapHeight = computed(() => currentConfig.value!.mapHeight);
-const currentTickMs = computed(() => {
-	const turbo = activeEffects.value.find((e) => e.type === 'turbo');
-	const chill = activeEffects.value.find((e) => e.type === 'chill');
-	const config = currentConfig.value!;
-	if (turbo) return config.tickMs / 1.35;
-	if (chill) return config.tickMs / 0.7;
-	return config.tickMs;
-});
+	const mapWidth = computed(() => currentConfig.value!.mapWidth);
+	const mapHeight = computed(() => currentConfig.value!.mapHeight);
+	const currentTickMs = computed(() => {
+		const turbo = activeEffects.value.find((e) => e.type === 'turbo');
+		const chill = activeEffects.value.find((e) => e.type === 'chill');
+		const config = currentConfig.value!;
+		if (turbo) return config.tickMs / 1.35;
+		if (chill) return config.tickMs / 0.7;
+		return config.tickMs;
+	});
 
 	const displayMultiplier = computed(() => {
 		const turbo = activeEffects.value.find((e) => e.type === 'turbo');
@@ -184,8 +145,8 @@ const currentTickMs = computed(() => {
 			}
 		}
 
-	if (emptyCells.length === 0) return { x: 0, y: 0 };
-	return emptyCells[Math.floor(Math.random() * emptyCells.length)]!;
+		if (emptyCells.length === 0) return { x: 0, y: 0 };
+		return emptyCells[Math.floor(Math.random() * emptyCells.length)]!;
 	}
 
 	function spawnApple(): Apple {
@@ -209,7 +170,7 @@ const currentTickMs = computed(() => {
 			type,
 			position: getRandomEmptyCell(),
 			spawnedAt: now,
-			expiresAt: isSpecial ? now + currentConfig.value!.specialAppleLifetimeMs : null,
+			expiresAt: isSpecial ? now + currentConfig.value!.specialAppleLifetimeMs : null
 		};
 	}
 
@@ -251,31 +212,31 @@ const currentTickMs = computed(() => {
 		switch (eatenApple.type) {
 			case 'classic':
 				score.value += Math.round(BASE_POINTS * mult);
-				targetLength.value += 1;
+				targetLength.value += CLASSIC_LENGTH_DELTA;
 				break;
 			case 'shrink':
-				targetLength.value = Math.max(MIN_SNAKE_LENGTH, targetLength.value - 3);
+				targetLength.value = Math.max(MIN_SNAKE_LENGTH, targetLength.value + SHRINK_LENGTH_DELTA);
 				while (snakeBody.value.length > targetLength.value) {
 					snakeBody.value.pop();
 				}
 				break;
 			case 'turbo':
 				score.value += Math.round(BASE_POINTS * mult);
-				targetLength.value += 1;
-				replaceSpeedEffect('turbo', 5000, 0.5);
+				targetLength.value += CLASSIC_LENGTH_DELTA;
+				replaceSpeedEffect('turbo', TURBO_DURATION_MS, TURBO_POINTS_DELTA);
 				break;
 			case 'chill':
 				score.value += Math.round(BASE_POINTS * mult);
-				targetLength.value += 1;
-				replaceSpeedEffect('chill', 5000, -0.25);
+				targetLength.value += CLASSIC_LENGTH_DELTA;
+				replaceSpeedEffect('chill', CHILL_DURATION_MS, CHILL_POINTS_DELTA);
 				break;
 			case 'ghost':
 				score.value += Math.round(BASE_POINTS * mult);
-				targetLength.value += 1;
-				refreshGhostEffect(4500);
+				targetLength.value += CLASSIC_LENGTH_DELTA;
+				refreshGhostEffect(GHOST_DURATION_MS);
 				break;
 			case 'golden':
-				score.value += Math.round(BASE_POINTS * mult * 3);
+				score.value += Math.round(BASE_POINTS * mult * GOLDEN_SCORE_MULTIPLIER);
 				break;
 		}
 
@@ -345,10 +306,10 @@ const currentTickMs = computed(() => {
 		const cellWidth = canvas.width / mapWidth.value;
 		const cellHeight = canvas.height / mapHeight.value;
 
-		ctx.fillStyle = '#1f2a23';
+		ctx.fillStyle = BOARD_BG;
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-		ctx.strokeStyle = 'rgba(242, 247, 243, 0.045)';
+		ctx.strokeStyle = GRID_COLOR;
 		ctx.lineWidth = 1;
 		for (let i = 0; i <= mapWidth.value; i++) {
 			ctx.beginPath();
@@ -364,12 +325,12 @@ const currentTickMs = computed(() => {
 		}
 
 		const snakeColor = isGhostActive.value
-			? 'rgba(84, 217, 120, 0.4)'
+			? SNAKE_COLORS.ghost
 			: isTurboActive.value
-				? '#FFB347'
+				? SNAKE_COLORS.turbo
 				: isChillActive.value
-					? '#87CEEB'
-					: '#54d978';
+					? SNAKE_COLORS.chill
+					: SNAKE_COLORS.normal;
 
 		for (let i = 0; i < snakeBody.value.length; i++) {
 			const segment = snakeBody.value[i]!;
@@ -401,7 +362,7 @@ const currentTickMs = computed(() => {
 			ctx.stroke();
 
 			if (apple.value.type === 'golden') {
-				ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+				ctx.fillStyle = GOLDEN_SHINE_COLOR;
 				ctx.beginPath();
 				ctx.arc(ax - radius * 0.3, ay - radius * 0.3, radius * 0.25, 0, Math.PI * 2);
 				ctx.fill();
