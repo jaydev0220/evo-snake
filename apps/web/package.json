@@ -21,6 +21,7 @@
 	"devDependencies": {
 		"@lucide/vue": "catalog:api",
 		"@packages/configs": "workspace:*",
+		"@packages/types": "workspace:*",
 		"@tailwindcss/vite": "catalog:web",
 		"@tsconfig/node24": "catalog:",
 		"@types/node": "catalog:",
