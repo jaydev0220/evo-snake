@@ -1,7 +1,11 @@
 <script setup lang="ts">
-	import { BookOpen, X } from '@lucide/vue';
+	import { Apple, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, X } from '@lucide/vue';
+	import { ref, watch, nextTick } from 'vue';
 
 	const isOpen = defineModel<boolean>({ required: true });
+
+	const modalRef = ref<HTMLElement | null>(null);
+	let triggerElement: HTMLElement | null = null;
 
 	function close() {
 		isOpen.value = false;
@@ -10,33 +14,93 @@
 	function onKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') close();
 	}
+
+	watch(isOpen, async (open) => {
+		if (open) {
+			triggerElement = document.activeElement as HTMLElement;
+			await nextTick();
+			modalRef.value?.focus();
+		} else if (triggerElement) {
+			triggerElement.focus();
+		}
+	});
+
+	interface FruitGuideItem {
+		id: string;
+		name: string;
+		effect: string;
+		outline: string;
+		color: string;
+	}
+
+	const fruits: FruitGuideItem[] = [{
+		id: "classic",
+		name: "Classic Apple",
+		effect: "Increases your score and grows the snake.",
+		outline: "#9F1D1D",
+		color: "#E53935"
+	}, {
+		id: "shrink",
+		name: "Shrink Apple",
+		effect: "Shortens the snake without giving points.",
+		outline: "#4C1D95",
+		color: "#8E44AD"
+	}, {
+		id: "turbo",
+		name: "Turbo Apple",
+		effect: "Temporarily increases the snake's speed and raises the points multiplier.",
+		outline: "#9A3412",
+		color: "#F97316"
+	}, {
+		id: "chill",
+		name: "Chill Apple",
+		effect: "Temporarily slows the snake down, but lowers the points multiplier.",
+		outline: "#0369A1",
+		color: "#38BDF8"
+	}, {
+		id: "ghost",
+		name: "Ghost Apple",
+		effect: "Temporarily lets the snake pass through its own body.",
+		outline: "#7DD3FC",
+		color: "#E0F2FE"
+	}, {
+		id: "golden",
+		name: "Golden Apple",
+		effect: "Gives bonus points without increasing the snake's length.",
+		outline: "#B45309",
+		color: "#FACC15"
+	}];
 </script>
 
 <template>
 	<Teleport to="body">
 		<div
 			v-if="isOpen"
-			class="fixed inset-0 z-50 flex items-center justify-center"
+			class="fixed inset-0 z-50 grid place-items-center bg-black/60 px-4 py-5"
 			@keydown="onKeydown"
 		>
-			<div
-				class="absolute inset-0 bg-black/60"
-				@click="close"
-			/>
-			<div
-				class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakePanel relative z-10 w-full max-w-md border p-6"
+			<section
+				ref="modalRef"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="play-guide-title"
+				tabindex="-1"
+				class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakePanel max-h-[calc(100vh-40px)] w-full max-w-170 overflow-hidden border outline-none md:max-h-[calc(100vh-96px)]"
 			>
-				<div class="mb-4 flex items-center justify-between">
-					<div class="text-evosnake-text flex items-center gap-2 text-lg font-semibold">
-						<BookOpen
-							class="text-evosnake-primary h-5 w-5"
-							aria-hidden="true"
-						/>
+				<header
+					class="border-evosnake-border flex items-center justify-between gap-4 border-b px-4 py-4 md:px-5"
+				>
+					<h2
+						id="play-guide-title"
+						class="text-evosnake-text text-2xl leading-none font-extrabold tracking-[-0.04em]"
+					>
 						How to Play
-					</div>
+					</h2>
+
 					<button
 						type="button"
-						class="text-evosnake-muted hover:text-evosnake-text rounded-lg p-1"
+						aria-label="Close play guide"
+						class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary grid size-10 place-items-center border"
 						@click="close"
 					>
 						<X
@@ -44,30 +108,138 @@
 							aria-hidden="true"
 						/>
 					</button>
+				</header>
+
+				<div
+					class="grid max-h-[calc(100vh-120px)] gap-6 overflow-y-auto px-4 py-5 md:max-h-[calc(100vh-176px)] md:px-5"
+				>
+					<section
+						class="grid gap-3"
+						aria-labelledby="controls-title"
+					>
+						<h3
+							id="controls-title"
+							class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase"
+						>
+							Controls
+						</h3>
+
+						<div class="grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr_auto_1fr]">
+							<div
+								class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 border p-4 text-center"
+							>
+								<div class="text-evosnake-text mb-3 font-extrabold">WASD</div>
+								<div
+									class="grid justify-center gap-1.5"
+									aria-label="WASD movement keys"
+								>
+									<div class="flex justify-center gap-1.5">
+										<kbd
+											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
+										>
+											W
+										</kbd>
+									</div>
+									<div class="flex justify-center gap-1.5">
+										<kbd
+											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
+										>
+											A
+										</kbd>
+										<kbd
+											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
+										>
+											S
+										</kbd>
+										<kbd
+											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
+										>
+											D
+										</kbd>
+									</div>
+								</div>
+							</div>
+
+							<div
+								class="text-evosnake-muted text-center text-xs font-black tracking-wider uppercase"
+							>
+								or
+							</div>
+
+							<div
+								class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 border p-4 text-center"
+							>
+								<div class="text-evosnake-text mb-3 font-extrabold">Arrow Keys</div>
+								<div
+									class="grid justify-center gap-1.5"
+									aria-label="Arrow movement keys"
+								>
+									<div class="flex justify-center gap-1.5">
+										<kbd
+											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
+										>
+											<ArrowUp :size="20" />
+										</kbd>
+									</div>
+									<div class="flex justify-center gap-1.5">
+										<kbd
+											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
+										>
+											<ArrowLeft :size="20" />
+										</kbd>
+										<kbd
+											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
+										>
+											<ArrowDown :size="20" />
+										</kbd>
+										<kbd
+											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
+										>
+											<ArrowRight :size="20" />
+										</kbd>
+									</div>
+								</div>
+							</div>
+						</div>
+					</section>
+
+					<section
+						class="grid gap-3"
+						aria-labelledby="fruits-title"
+					>
+						<h3
+							id="fruits-title"
+							class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase"
+						>
+							Fruits
+						</h3>
+
+						<div class="grid gap-2.5">
+							<div
+								v-for="fruit in fruits"
+								:key="fruit.id"
+								class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid grid-cols-[40px_1fr] items-start gap-3 border p-3 md:grid-cols-[44px_1fr]"
+							>
+								<div
+									class="bg-evosnake-bg grid size-10 place-items-center rounded-xl text-xl md:size-11 md:text-2xl"
+									aria-hidden="true"
+								>
+									<Apple :color=fruit.outline :fill=fruit.color />
+								</div>
+
+								<div class="min-w-0">
+									<div class="text-evosnake-text font-extrabold">
+										{{ fruit.name }}
+									</div>
+									<p class="text-evosnake-muted mt-1 text-sm leading-6">
+										{{ fruit.effect }}
+									</p>
+								</div>
+							</div>
+						</div>
+					</section>
 				</div>
-				<div class="text-evosnake-muted space-y-3 text-sm">
-					<p>
-						<strong class="text-evosnake-text">Controls:</strong>
-						Use arrow keys or WASD to change the snake's direction.
-					</p>
-					<p>
-						<strong class="text-evosnake-text">Goal:</strong>
-						Eat fruits to grow and increase your score. Don't hit the walls or yourself!
-					</p>
-					<p>
-						<strong class="text-evosnake-text">Fruits:</strong>
-						Different fruits give different points and may have special effects.
-					</p>
-					<p>
-						<strong class="text-evosnake-text">Difficulty:</strong>
-						Higher difficulties increase the snake's speed and challenge.
-					</p>
-					<p>
-						<strong class="text-evosnake-text">Leaderboard:</strong>
-						Your best score each week is tracked. Rankings reset weekly (Monday, Taipei time).
-					</p>
-				</div>
-			</div>
+			</section>
 		</div>
 	</Teleport>
 </template>
