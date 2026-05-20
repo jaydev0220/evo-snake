@@ -15,7 +15,7 @@
 	}>();
 
 	function openBugReport() {
-		window.open('https://github.com/anomalyco/opencode/issues', '_blank');
+		window.open('https://github.com/jaydev0220/evo-snake/blob/main/BUG_REPORT.md', '_blank');
 	}
 
 	function handlePlay() {
