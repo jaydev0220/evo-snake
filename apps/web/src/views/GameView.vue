@@ -57,7 +57,7 @@
 	const gameLoop = ref<number | null>(null);
 	const appleTimer = ref<number | null>(null);
 	const canvasRef = ref<HTMLCanvasElement | null>(null);
-	const applePositions = ref<Map<string, { x: number; y: number }>>(new Map());
+	const applePositions = ref<Map<string, { x: number; y: number; size: number }>>(new Map());
 
 	const showGameOver = ref(false);
 	const isUploading = ref(false);
@@ -402,9 +402,15 @@
 
 		applePositions.value = new Map();
 		if (apple.value) {
-			const px = (apple.value.position.x / mapWidth.value) * 100;
-			const py = (apple.value.position.y / mapHeight.value) * 100;
-			applePositions.value.set(apple.value.type, { x: px, y: py });
+			const cellPctX = 100 / mapWidth.value;
+			const cellPctY = 100 / mapHeight.value;
+			const px = apple.value.position.x * cellPctX + cellPctX / 2;
+			const py = apple.value.position.y * cellPctY + cellPctY / 2;
+			applePositions.value.set(apple.value.type, {
+				x: px,
+				y: py,
+				size: Math.min(cellPctX, cellPctY)
+			});
 		}
 	}
 
@@ -505,7 +511,11 @@
 		isUploading.value = true;
 		uploadError.value = null;
 		try {
-			const playerId = localStorage.getItem('evosnake_player_id') || 'anonymous';
+			let playerId = localStorage.getItem('evosnake_player_id');
+			if (!playerId) {
+				playerId = crypto.randomUUID();
+				localStorage.setItem('evosnake_player_id', playerId);
+			}
 			await submitScore({
 				playerId,
 				score: score.value,
@@ -629,16 +639,11 @@
 							<div
 								v-for="[type, pos] in Array.from(applePositions.entries())"
 								:key="type"
-								class="pointer-events-none absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center"
-								:style="{
-									left: `${pos.x}%`,
-									top: `${pos.y}%`,
-									width: `${100 / mapWidth}%`,
-									height: `${100 / mapHeight}%`
-								}"
+								class="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
+								:style="{ left: `${pos.x}%`, top: `${pos.y}%` }"
 							>
 								<AppleIcon
-									:size="Math.min(28, (100 / mapWidth) * 4)"
+									:size="Math.round(pos.size * 4)"
 									:color="APPLE_COLORS[type as AppleType].outline"
 									:fill="APPLE_COLORS[type as AppleType].fill"
 								/>
