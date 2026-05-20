@@ -15,6 +15,7 @@
 		"format": "oxfmt src/"
 	},
 	"dependencies": {
+		"pinia": "catalog:web",
 		"vue": "catalog:web"
 	},
 	"devDependencies": {
