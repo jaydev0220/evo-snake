@@ -41,7 +41,7 @@
 				class="bg-evosnake-surface border-evosnake-border rounded-evosnakePanel shadow-evosnakePanel grid content-center gap-7 border p-5 md:p-8 lg:min-h-130"
 			>
 				<h1
-					class="flex items-center justify-center gap-2 text-[clamp(42px,14vw,64px)] leading-none font-black tracking-[-0.06em] md:justify-start md:gap-4 md:text-[clamp(48px,8vw,84px)]"
+					class="flex items-center justify-center gap-2 text-[clamp(42px,14vw,64px)] leading-none font-black tracking-[-0.06em] select-none md:justify-start md:gap-4 md:text-[clamp(48px,8vw,84px)]"
 				>
 					<span
 						aria-hidden="true"
