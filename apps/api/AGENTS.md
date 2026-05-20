@@ -5,6 +5,7 @@ apps/api/
 |-- src/
     |-- index.ts    # Starts the Express server
     |-- app.ts    # Express app configuration
+    |-- lib/    # Custom library files
     |-- routes/    # API routes
     |-- controllers/    # Routes controllers
     |-- services/    # API business logics
