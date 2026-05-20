@@ -15,6 +15,7 @@ project-root/
 |   |-- api/    # Express API server
 |   `-- web/    # Vue web game
 `-- packages/
+    |-- configs/  # Tool configs
     `-- share/    # Shared types/utilities used by api and web
 ```
 
