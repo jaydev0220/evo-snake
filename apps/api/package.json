@@ -20,6 +20,7 @@
 		"@prisma/client": "catalog:api",
 		"cors": "catalog:api",
 		"express": "catalog:api",
+		"express-rate-limit": "catalog:api",
 		"helmet": "catalog:api",
 		"zod": "catalog:api"
 	},

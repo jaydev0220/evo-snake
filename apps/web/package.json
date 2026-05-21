@@ -39,7 +39,6 @@
 		"tailwindcss": "catalog:web",
 		"typescript": "catalog:",
 		"vite": "catalog:web",
-		"vite-plugin-vue-devtools": "catalog:web",
 		"vue-tsc": "catalog:web"
 	}
 }

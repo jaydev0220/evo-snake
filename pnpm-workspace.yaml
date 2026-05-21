@@ -4,10 +4,13 @@ packages:
 
 catalogMode: strict
 
+overrides:
+  '@hono/node-server': 1.19.13
+
 catalog:
   '@types/node': ^24
   oxfmt: ^0.50.0
-  oxlint: ^1.65.0
+  oxlint: ^1.66.0
   typescript: ^6.0.3
   '@tsconfig/node24': ^24
 
@@ -22,6 +25,7 @@ catalogs:
     cors: ^2.8.6
     dotenv: ^17.4.2
     express: ^5.2.1
+    express-rate-limit: ^8.5.2
     helmet: ^8.1.0
     prisma: ^7.8.0
     tsx: ^4.22.1
@@ -32,12 +36,11 @@ catalogs:
     '@vue/tsconfig': '^0.9.1'
     eslint: ^10.2.1
     eslint-config-prettier: ^10.1.8
-    eslint-plugin-oxlint: ~1.60.0
+    eslint-plugin-oxlint: ^1.66.0
     eslint-plugin-vue: ~10.8.0
     jiti: ^2.6.1
     npm-run-all2: ^8.0.4
     vite: ^8.0.8
-    vite-plugin-vue-devtools: ^8.1.1
     vue-tsc: ^3.2.6
     vue: ^3.5.32
     tailwindcss: ^4.3.0

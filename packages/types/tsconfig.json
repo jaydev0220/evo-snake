@@ -1,0 +1,18 @@
+{
+	"extends": "@tsconfig/node24/tsconfig.json",
+	"compilerOptions": {
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"ignoreDeprecations": "6.0",
+		"declaration": true,
+		"declarationMap": false,
+		"sourceMap": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+		"rootDir": "./src",
+		"outDir": "./dist"
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["node_modules", "dist"]
+}

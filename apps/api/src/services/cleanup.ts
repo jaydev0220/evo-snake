@@ -1,5 +1,5 @@
-import { getWeekStart } from '../lib/utils/weekStart';
-import { prisma } from './prisma';
+import { getWeekStart } from '../lib/utils/weekStart.js';
+import { prisma } from './prisma.js';
 
 export async function cleanupOldScores(): Promise<number> {
 	const currentWeekStart = getWeekStart();

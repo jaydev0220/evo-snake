@@ -4,8 +4,8 @@ import {
 	submitScoreSchema,
 	leaderboardQuerySchema,
 	meQuerySchema
-} from '../lib/schemas/leaderboard';
-import { submitScore, getLeaderboard, getPlayerRank } from '../services/leaderboard';
+} from '../lib/schemas/leaderboard.js';
+import { submitScore, getLeaderboard, getPlayerRank } from '../services/leaderboard.js';
 
 export async function handlePostScore(req: Request, res: Response): Promise<void> {
 	const result = submitScoreSchema.safeParse(req.body);

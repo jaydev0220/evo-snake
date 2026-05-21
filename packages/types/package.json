@@ -3,14 +3,26 @@
 	"version": "0.0.1",
 	"private": true,
 	"type": "module",
+	"scripts": {
+		"build": "tsc",
+		"type-check": "tsc --noEmit",
+		"lint": "oxlint . --fix",
+		"format": "oxfmt src/"
+	},
 	"exports": {
 		".": {
 			"types": "./src/index.ts",
-			"default": "./src/index.ts"
+			"default": "./dist/index.js"
 		}
 	},
-	"devDependencies": {
-		"typescript": "catalog:",
+	"dependencies": {
 		"zod": "catalog:api"
+	},
+	"devDependencies": {
+		"@packages/configs": "workspace:*",
+		"@tsconfig/node24": "catalog:",
+		"oxfmt": "catalog:",
+		"oxlint": "catalog:",
+		"typescript": "catalog:"
 	}
 }

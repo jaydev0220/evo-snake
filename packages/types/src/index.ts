@@ -4,8 +4,8 @@ import {
 	difficultyEnum,
 	submitScoreSchema,
 	leaderboardQuerySchema,
-	meQuerySchema,
-} from './schemas';
+	meQuerySchema
+} from './schemas.js';
 
 export type Difficulty = z.infer<typeof difficultyEnum>;
 
@@ -42,5 +42,5 @@ export {
 	submitScoreSchema,
 	leaderboardQuerySchema,
 	meQuerySchema,
-	envSchema,
-} from './schemas';
+	envSchema
+} from './schemas.js';
