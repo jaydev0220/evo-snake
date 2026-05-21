@@ -20,6 +20,7 @@
 
 	function handlePlay() {
 		if (!store.playerName.trim()) return;
+		store.setPlayerName(store.playerName);
 		store.loadLeaderboard();
 		emit('start');
 	}

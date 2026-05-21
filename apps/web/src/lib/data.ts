@@ -1,3 +1,5 @@
+import type { Difficulty } from '@packages/types';
+
 export type Direction = 'up' | 'down' | 'left' | 'right';
 export type AppleType = 'classic' | 'shrink' | 'turbo' | 'chill' | 'ghost' | 'golden';
 export type GameStatus = 'idle' | 'playing' | 'gameOver';
@@ -29,7 +31,7 @@ export interface DifficultyConfig {
 	specialAppleLifetimeMs: number;
 }
 
-export const DIFFICULTIES: Record<string, DifficultyConfig> = {
+export const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
 	easy: { label: 'Easy', mapWidth: 24, mapHeight: 24, tickMs: 200, specialAppleLifetimeMs: 9000 },
 	normal: {
 		label: 'Normal',

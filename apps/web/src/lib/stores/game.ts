@@ -4,6 +4,8 @@ import { ref, watch } from 'vue';
 
 import { fetchLeaderboard, fetchMyRank, submitScore } from '../api';
 
+const PLAYER_ID_KEY = 'evosnake_player_id';
+
 function generateUUID(): string {
 	return (
 		crypto.randomUUID?.() ??
@@ -14,26 +16,35 @@ function generateUUID(): string {
 	);
 }
 
+function getStoredPlayerId(): string {
+	try {
+		const storedId = localStorage.getItem(PLAYER_ID_KEY);
+		if (storedId) return storedId;
+
+		const newId = generateUUID();
+		localStorage.setItem(PLAYER_ID_KEY, newId);
+		return newId;
+	} catch {
+		return generateUUID();
+	}
+}
+
 export const useGameStore = defineStore('game', () => {
 	const playerName = ref('');
 	const selectedDifficulty = ref<Difficulty>('easy');
-	const playerId = ref(localStorage.getItem('evosnake_player_id') || generateUUID());
+	const playerId = ref(getStoredPlayerId());
 
 	const leaderboard = ref<LeaderboardEntry[]>([]);
 	const myRank = ref<PlayerRank | null>(null);
 	const isLoading = ref(false);
 	const error = ref<string | null>(null);
 
-	if (!localStorage.getItem('evosnake_player_id')) {
-		localStorage.setItem('evosnake_player_id', playerId.value);
-	}
-
 	watch(selectedDifficulty, () => {
 		loadLeaderboard();
 	});
 
 	function setPlayerName(name: string) {
-		playerName.value = name;
+		playerName.value = name.trim();
 	}
 
 	function setDifficulty(difficulty: Difficulty) {
@@ -64,10 +75,16 @@ export const useGameStore = defineStore('game', () => {
 	}
 
 	async function postScore(score: number, difficulty: Difficulty) {
+		const trimmedName = playerName.value.trim();
+		if (!trimmedName) {
+			error.value = 'Player name is required';
+			return;
+		}
+
 		try {
 			await submitScore({
 				playerId: playerId.value,
-				playerName: playerName.value,
+				playerName: trimmedName,
 				score,
 				difficulty
 			});

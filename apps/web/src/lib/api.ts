@@ -8,8 +8,8 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 		...options
 	});
 	if (!res.ok) {
-		const error = await res.json().catch(() => ({ message: res.statusText }));
-		throw new Error(error.message || `HTTP ${res.status}`);
+		const error = await res.json().catch(() => null);
+		throw new Error(error?.error?.message || error?.message || `HTTP ${res.status}`);
 	}
 	if (res.status === 201 || res.status === 204) return undefined as T;
 	return res.json();
@@ -18,11 +18,13 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 export async function fetchLeaderboard(
 	difficulty: Difficulty
 ): Promise<{ data: LeaderboardEntry[]; meta: { totalEntries: number } }> {
-	return apiFetch(`/v1/scores/leaderboard?difficulty=${difficulty}`);
+	const query = new URLSearchParams({ difficulty });
+	return apiFetch(`/v1/scores/leaderboard?${query}`);
 }
 
 export async function fetchMyRank(playerId: string, difficulty: Difficulty): Promise<PlayerRank> {
-	return apiFetch(`/v1/scores/leaderboard/me?playerId=${playerId}&difficulty=${difficulty}`);
+	const query = new URLSearchParams({ playerId, difficulty });
+	return apiFetch(`/v1/scores/leaderboard/me?${query}`);
 }
 
 export async function submitScore(data: SubmitScoreBody): Promise<void> {

@@ -66,12 +66,12 @@
 	const uploadError = ref<string | null>(null);
 
 	const currentConfig = computed(() => DIFFICULTIES[difficulty.value]);
-	const mapWidth = computed(() => currentConfig.value!.mapWidth);
-	const mapHeight = computed(() => currentConfig.value!.mapHeight);
+	const mapWidth = computed(() => currentConfig.value.mapWidth);
+	const mapHeight = computed(() => currentConfig.value.mapHeight);
 	const currentTickMs = computed(() => {
 		const turbo = activeEffects.value.find((e) => e.type === 'turbo');
 		const chill = activeEffects.value.find((e) => e.type === 'chill');
-		const config = currentConfig.value!;
+		const config = currentConfig.value;
 		if (turbo) return config.tickMs / 1.35;
 		if (chill) return config.tickMs / 0.7;
 		return config.tickMs;
@@ -195,7 +195,7 @@
 			type,
 			position: getRandomEmptyCell(),
 			spawnedAt: now,
-			expiresAt: isSpecial ? now + currentConfig.value!.specialAppleLifetimeMs : null
+			expiresAt: isSpecial ? now + currentConfig.value.specialAppleLifetimeMs : null
 		};
 	}
 
@@ -446,8 +446,10 @@
 			return;
 		}
 
+		const willMoveTail = snakeBody.value.length >= targetLength.value;
+		const collisionBody = willMoveTail ? snakeBody.value.slice(0, -1) : snakeBody.value;
 		if (!isGhostActive.value) {
-			for (const segment of snakeBody.value) {
+			for (const segment of collisionBody) {
 				if (segment.x === newHead.x && segment.y === newHead.y) {
 					triggerGameOver();
 					return;
@@ -471,9 +473,17 @@
 		drawGame();
 	}
 
+	function scheduleNextTick() {
+		if (status.value !== 'playing') return;
+		gameLoop.value = window.setTimeout(() => {
+			updateGame();
+			scheduleNextTick();
+		}, currentTickMs.value);
+	}
+
 	function stopGame() {
 		if (gameLoop.value) {
-			clearInterval(gameLoop.value);
+			clearTimeout(gameLoop.value);
 			gameLoop.value = null;
 		}
 		if (appleTimer.value) {
@@ -506,7 +516,7 @@
 		drawGame();
 		startAppleTimer();
 
-		gameLoop.value = window.setInterval(updateGame, currentTickMs.value);
+		scheduleNextTick();
 	}
 
 	async function handleUploadScore() {
@@ -611,7 +621,7 @@
 								Mode
 							</div>
 							<div class="text-evosnake-text truncate text-lg font-black tracking-[-0.03em]">
-								{{ currentConfig!.label }}
+								{{ currentConfig.label }}
 							</div>
 						</div>
 					</section>
@@ -771,7 +781,7 @@
 									Mode
 								</div>
 								<div class="text-evosnake-text text-sm font-bold">
-									{{ currentConfig!.label }}
+									{{ currentConfig.label }}
 								</div>
 							</div>
 							<div
