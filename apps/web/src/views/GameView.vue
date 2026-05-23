@@ -15,13 +15,18 @@
 		APPLE_COLORS,
 		APPLE_SPAWN_WEIGHTS,
 		BASE_POINTS,
+		MAX_APPLES_BY_DIFFICULTY,
+		MAX_SPECIAL_APPLES,
 		MIN_SNAKE_LENGTH,
 		STARTING_SNAKE_LENGTH,
 		MIN_POINTS_MULTIPLIER,
 		MAX_POINTS_MULTIPLIER,
+		ROTTEN_APPLE_LIFETIME_MS,
 		TURBO_DURATION_MS,
+		TURBO_SPEED_MULTIPLIER,
 		TURBO_POINTS_DELTA,
 		CHILL_DURATION_MS,
+		CHILL_SPEED_MULTIPLIER,
 		CHILL_POINTS_DELTA,
 		GHOST_DURATION_MS,
 		SHRINK_LENGTH_DELTA,
@@ -33,6 +38,7 @@
 		EFFECT_LABELS,
 		type Direction,
 		type AppleType,
+		type SpawnableAppleType,
 		type GameStatus,
 		type Position,
 		type ActiveEffect,
@@ -55,27 +61,31 @@
 	const score = ref(0);
 	const pointsMultiplier = ref(1.0);
 	const activeEffects = ref<ActiveEffect[]>([]);
-	const apple = ref<Apple | null>(null);
+	const apples = ref<Apple[]>([]);
 	const gameLoop = ref<number | null>(null);
-	const appleTimer = ref<number | null>(null);
 	const canvasRef = ref<HTMLCanvasElement | null>(null);
-	const applePositions = ref<Map<string, { x: number; y: number; size: number }>>(new Map());
+	const applePositions = ref<
+		Array<{ id: string; type: AppleType; x: number; y: number; size: number }>
+	>([]);
 
 	const showGameOver = ref(false);
 	const isUploading = ref(false);
 	const uploadError = ref<string | null>(null);
 
 	const currentConfig = computed(() => DIFFICULTIES[difficulty.value]);
+	const currentAppleCap = computed(() => MAX_APPLES_BY_DIFFICULTY[difficulty.value]);
 	const mapWidth = computed(() => currentConfig.value.mapWidth);
 	const mapHeight = computed(() => currentConfig.value.mapHeight);
 	const currentTickMs = computed(() => {
 		const turbo = activeEffects.value.find((e) => e.type === 'turbo');
 		const chill = activeEffects.value.find((e) => e.type === 'chill');
 		const config = currentConfig.value;
-		if (turbo) return config.tickMs / 1.35;
-		if (chill) return config.tickMs / 0.7;
+		if (turbo) return config.tickMs / TURBO_SPEED_MULTIPLIER;
+		if (chill) return config.tickMs / CHILL_SPEED_MULTIPLIER;
 		return config.tickMs;
 	});
+
+	let nextAppleId = 0;
 
 	const displayMultiplier = computed(() => {
 		const turbo = activeEffects.value.find((e) => e.type === 'turbo');
@@ -101,6 +111,11 @@
 
 	function clamp(val: number, min: number, max: number) {
 		return Math.min(Math.max(val, min), max);
+	}
+
+	function getNextAppleId() {
+		nextAppleId += 1;
+		return `apple-${nextAppleId}`;
 	}
 
 	function directionToVector(dir: Direction): Position {
@@ -157,9 +172,15 @@
 		}
 	}
 
-	function getRandomEmptyCell(): Position {
+	function isSpecialAppleType(type: AppleType): type is Exclude<AppleType, 'classic' | 'rotten'> {
+		return type !== 'classic' && type !== 'rotten';
+	}
+
+	function getRandomEmptyCell(): Position | null {
 		const occupied = new Set(snakeBody.value.map((p) => `${p.x},${p.y}`));
-		if (apple.value) occupied.add(`${apple.value.position.x},${apple.value.position.y}`);
+		for (const apple of apples.value) {
+			occupied.add(`${apple.position.x},${apple.position.y}`);
+		}
 
 		const emptyCells: Position[] = [];
 		for (let x = 0; x < mapWidth.value; x++) {
@@ -170,33 +191,71 @@
 			}
 		}
 
-		if (emptyCells.length === 0) return { x: 0, y: 0 };
+		if (emptyCells.length === 0) return null;
 		return emptyCells[Math.floor(Math.random() * emptyCells.length)]!;
 	}
 
-	function spawnApple(): Apple {
-		const weights = APPLE_SPAWN_WEIGHTS;
-		const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+	function chooseSpawnType(): SpawnableAppleType {
+		const specialAppleCount = apples.value.filter((apple) => isSpecialAppleType(apple.type)).length;
+		if (specialAppleCount >= MAX_SPECIAL_APPLES) {
+			return 'classic';
+		}
+
+		const totalWeight = Object.values(APPLE_SPAWN_WEIGHTS).reduce((sum, weight) => sum + weight, 0);
 		let random = Math.random() * totalWeight;
 
-		let type: AppleType = 'classic';
-		for (const [key, weight] of Object.entries(weights)) {
+		for (const [type, weight] of Object.entries(APPLE_SPAWN_WEIGHTS) as Array<
+			[SpawnableAppleType, number]
+		>) {
 			random -= weight;
 			if (random <= 0) {
-				type = key as AppleType;
-				break;
+				return type;
 			}
 		}
 
-		const isSpecial = type !== 'classic';
-		const now = Date.now();
+		return 'classic';
+	}
+
+	function buildApple(type: AppleType, position: Position, now = Date.now()): Apple {
+		const expiresAt =
+			type === 'rotten'
+				? now + ROTTEN_APPLE_LIFETIME_MS
+				: isSpecialAppleType(type)
+					? now + currentConfig.value.specialAppleLifetimeMs
+					: null;
 
 		return {
+			id: getNextAppleId(),
 			type,
-			position: getRandomEmptyCell(),
+			position,
 			spawnedAt: now,
-			expiresAt: isSpecial ? now + currentConfig.value.specialAppleLifetimeMs : null
+			expiresAt
 		};
+	}
+
+	function spawnApple(): Apple | null {
+		const position = getRandomEmptyCell();
+		if (!position) {
+			return null;
+		}
+
+		const type = chooseSpawnType();
+		const now = Date.now();
+		return buildApple(type, position, now);
+	}
+
+	function fillApplesToCap() {
+		while (apples.value.length < currentAppleCap.value) {
+			const newApple = spawnApple();
+			if (!newApple) {
+				break;
+			}
+			apples.value.push(newApple);
+		}
+	}
+
+	function removeApple(id: string) {
+		apples.value = apples.value.filter((apple) => apple.id !== id);
 	}
 
 	function replaceSpeedEffect(type: 'turbo' | 'chill', durationMs: number, pointsDelta: number) {
@@ -263,10 +322,13 @@
 			case 'golden':
 				score.value += Math.round(BASE_POINTS * mult * GOLDEN_SCORE_MULTIPLIER);
 				break;
+			case 'rotten':
+				score.value = Math.max(0, score.value - BASE_POINTS);
+				break;
 		}
 
-		apple.value = spawnApple();
-		startAppleTimer();
+		removeApple(eatenApple.id);
+		fillApplesToCap();
 	}
 
 	function checkExpiredEffects() {
@@ -292,24 +354,34 @@
 		activeEffects.value = activeEffects.value.filter((e) => e.expiresAt > now);
 	}
 
-	function checkAppleExpiration() {
-		if (!apple.value || !apple.value.expiresAt) return;
-		if (Date.now() >= apple.value.expiresAt) {
-			apple.value = spawnApple();
-			startAppleTimer();
-		}
-	}
+	function updateExpiredApples() {
+		const now = Date.now();
+		let didChange = false;
+		const nextApples: Apple[] = [];
 
-	function startAppleTimer() {
-		if (appleTimer.value) clearTimeout(appleTimer.value);
-		if (apple.value?.expiresAt) {
-			const delay = apple.value.expiresAt - Date.now();
-			if (delay > 0) {
-				appleTimer.value = window.setTimeout(() => {
-					checkAppleExpiration();
-				}, delay);
+		for (const apple of apples.value) {
+			if (!apple.expiresAt || apple.expiresAt > now) {
+				nextApples.push(apple);
+				continue;
+			}
+
+			didChange = true;
+			if (isSpecialAppleType(apple.type)) {
+				nextApples.push({
+					...apple,
+					type: 'rotten',
+					spawnedAt: now,
+					expiresAt: now + ROTTEN_APPLE_LIFETIME_MS
+				});
 			}
 		}
+
+		if (!didChange) {
+			return;
+		}
+
+		apples.value = nextApples;
+		fillApplesToCap();
 	}
 
 	function resizeCanvas() {
@@ -402,18 +474,15 @@
 			ctx.fill();
 		}
 
-		applePositions.value = new Map();
-		if (apple.value) {
-			const cellPctX = 100 / mapWidth.value;
-			const cellPctY = 100 / mapHeight.value;
-			const px = apple.value.position.x * cellPctX + cellPctX / 2;
-			const py = apple.value.position.y * cellPctY + cellPctY / 2;
-			applePositions.value.set(apple.value.type, {
-				x: px,
-				y: py,
-				size: Math.min(cellPctX, cellPctY)
-			});
-		}
+		const cellPctX = 100 / mapWidth.value;
+		const cellPctY = 100 / mapHeight.value;
+		applePositions.value = apples.value.map((apple) => ({
+			id: apple.id,
+			type: apple.type,
+			x: apple.position.x * cellPctX + cellPctX / 2,
+			y: apple.position.y * cellPctY + cellPctY / 2,
+			size: Math.min(cellPctX, cellPctY)
+		}));
 	}
 
 	function triggerGameOver() {
@@ -424,7 +493,7 @@
 
 	function updateGame() {
 		checkExpiredEffects();
-		checkAppleExpiration();
+		updateExpiredApples();
 
 		snakeDirection.value = queuedDirection.value;
 		const dirVec = directionToVector(snakeDirection.value);
@@ -462,12 +531,11 @@
 			snakeBody.value.pop();
 		}
 
-		if (
-			apple.value &&
-			newHead.x === apple.value.position.x &&
-			newHead.y === apple.value.position.y
-		) {
-			applyAppleEffect(apple.value);
+		const eatenApple = apples.value.find(
+			(apple) => newHead.x === apple.position.x && newHead.y === apple.position.y
+		);
+		if (eatenApple) {
+			applyAppleEffect(eatenApple);
 		}
 
 		drawGame();
@@ -486,10 +554,6 @@
 			clearTimeout(gameLoop.value);
 			gameLoop.value = null;
 		}
-		if (appleTimer.value) {
-			clearTimeout(appleTimer.value);
-			appleTimer.value = null;
-		}
 	}
 
 	function initGame() {
@@ -507,14 +571,16 @@
 		score.value = 0;
 		pointsMultiplier.value = 1.0;
 		activeEffects.value = [];
-		apple.value = spawnApple();
+		apples.value = [];
+		nextAppleId = 0;
+		fillApplesToCap();
 		status.value = 'playing';
 		showGameOver.value = false;
+		isUploading.value = false;
 		uploadError.value = null;
 
 		resizeCanvas();
 		drawGame();
-		startAppleTimer();
 
 		scheduleNextTick();
 	}
@@ -640,15 +706,15 @@
 							/>
 
 							<div
-								v-for="[type, pos] in Array.from(applePositions.entries())"
-								:key="type"
+								v-for="applePosition in applePositions"
+								:key="applePosition.id"
 								class="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
-								:style="{ left: `${pos.x}%`, top: `${pos.y}%` }"
+								:style="{ left: `${applePosition.x}%`, top: `${applePosition.y}%` }"
 							>
 								<AppleIcon
-									:size="Math.round(pos.size * 4)"
-									:color="APPLE_COLORS[type as AppleType].outline"
-									:fill="APPLE_COLORS[type as AppleType].fill"
+									:size="Math.round(applePosition.size * 4)"
+									:color="APPLE_COLORS[applePosition.type].outline"
+									:fill="APPLE_COLORS[applePosition.type].fill"
 								/>
 							</div>
 						</div>
