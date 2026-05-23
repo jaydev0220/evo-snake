@@ -2,7 +2,7 @@
 	import { Apple, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, X } from '@lucide/vue';
 	import { ref, watch, nextTick } from 'vue';
 
-	import { FRUIT_GUIDE, APPLE_COLORS } from '../lib/data';
+	import { FRUIT_GUIDE, APPLE_COLORS, BONUS_CHAIN_COMPLETION_BONUS } from '../lib/data';
 
 	const isOpen = defineModel<boolean>({ required: true });
 
@@ -195,6 +195,30 @@
 									</p>
 								</div>
 							</div>
+						</div>
+					</section>
+
+					<section
+						class="grid gap-3"
+						aria-labelledby="bonus-chain-title"
+					>
+						<h3
+							id="bonus-chain-title"
+							class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase"
+						>
+							Bonus Chain
+						</h3>
+
+						<div
+							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid gap-2 border p-3"
+						>
+							<p class="text-evosnake-text text-sm font-bold">
+								Rarely, a 4-step bonus chain appears beside the board.
+							</p>
+							<p class="text-evosnake-muted text-sm leading-6">
+								Eat apples in the shown order to claim +{{ BONUS_CHAIN_COMPLETION_BONUS }}. Eating
+								any other apple ends the event immediately.
+							</p>
 						</div>
 					</section>
 				</div>

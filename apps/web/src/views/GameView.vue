@@ -1,20 +1,22 @@
 <script setup lang="ts">
-	import {
-		Apple as AppleIcon,
-		ArrowDown,
-		ArrowLeft as ArrowLeftIcon,
-		ArrowRight,
-		ArrowUp,
-		Trophy,
-		X
-	} from '@lucide/vue';
+	import { AppleIcon, ArrowLeft as ArrowLeftIcon } from '@lucide/vue';
 	import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue';
 
+	import ActiveEffectsPanel from '../components/ActiveEffectsPanel.vue';
+	import BonusChainPanel from '../components/BonusChainPanel.vue';
+	import GameOverDialog from '../components/GameOverDialog.vue';
+	import GameStatusPanel from '../components/GameStatusPanel.vue';
+	import OnScreenControlsPanel from '../components/OnScreenControlsPanel.vue';
 	import {
 		DIFFICULTIES,
 		APPLE_COLORS,
 		APPLE_SPAWN_WEIGHTS,
+		BONUS_CHAIN_LENGTH,
+		BONUS_CHAIN_TRIGGER_MIN_MS,
+		BONUS_CHAIN_TRIGGER_MAX_MS,
+		BONUS_CHAIN_TRIGGER_CHANCE,
 		BASE_POINTS,
+		BONUS_CHAIN_COMPLETION_BONUS,
 		MAX_APPLES_BY_DIFFICULTY,
 		MAX_SPECIAL_APPLES,
 		MIN_SNAKE_LENGTH,
@@ -42,7 +44,8 @@
 		type GameStatus,
 		type Position,
 		type ActiveEffect,
-		type Apple
+		type Apple,
+		type BonusChainState
 	} from '../lib/data';
 	import { useGameStore } from '../lib/stores/game';
 
@@ -62,7 +65,9 @@
 	const pointsMultiplier = ref(1.0);
 	const activeEffects = ref<ActiveEffect[]>([]);
 	const apples = ref<Apple[]>([]);
+	const bonusChain = ref<BonusChainState | null>(null);
 	const gameLoop = ref<number | null>(null);
+	const bonusChainTimer = ref<number | null>(null);
 	const canvasRef = ref<HTMLCanvasElement | null>(null);
 	const applePositions = ref<
 		Array<{ id: string; type: AppleType; x: number; y: number; size: number }>
@@ -99,6 +104,19 @@
 	const isGhostActive = computed(() => activeEffects.value.some((e) => e.type === 'ghost'));
 	const isTurboActive = computed(() => activeEffects.value.some((e) => e.type === 'turbo'));
 	const isChillActive = computed(() => activeEffects.value.some((e) => e.type === 'chill'));
+	const currentBonusChainTarget = computed<SpawnableAppleType | null>(() => {
+		if (!bonusChain.value) return null;
+		return bonusChain.value.steps[bonusChain.value.currentIndex] ?? null;
+	});
+	const bonusChainSteps = computed(() => {
+		if (!bonusChain.value) return [];
+		return bonusChain.value.steps.map((type, index) => ({
+			type,
+			index,
+			isCompleted: index < bonusChain.value!.currentIndex,
+			isCurrent: index === bonusChain.value!.currentIndex
+		}));
+	});
 
 	const activeEffectsList = computed(() => {
 		const now = Date.now();
@@ -176,6 +194,27 @@
 		return type !== 'classic' && type !== 'rotten';
 	}
 
+	function getRandomWeightedType(
+		pool: SpawnableAppleType[] = Object.keys(APPLE_SPAWN_WEIGHTS) as SpawnableAppleType[]
+	) {
+		const totalWeight = pool.reduce((sum, type) => sum + APPLE_SPAWN_WEIGHTS[type], 0);
+		let random = Math.random() * totalWeight;
+
+		for (const type of pool) {
+			random -= APPLE_SPAWN_WEIGHTS[type];
+			if (random <= 0) {
+				return type;
+			}
+		}
+
+		return pool[0] ?? 'classic';
+	}
+
+	function getRandomBonusChainDelay() {
+		const range = BONUS_CHAIN_TRIGGER_MAX_MS - BONUS_CHAIN_TRIGGER_MIN_MS;
+		return BONUS_CHAIN_TRIGGER_MIN_MS + Math.round(Math.random() * range);
+	}
+
 	function getRandomEmptyCell(): Position | null {
 		const occupied = new Set(snakeBody.value.map((p) => `${p.x},${p.y}`));
 		for (const apple of apples.value) {
@@ -201,19 +240,7 @@
 			return 'classic';
 		}
 
-		const totalWeight = Object.values(APPLE_SPAWN_WEIGHTS).reduce((sum, weight) => sum + weight, 0);
-		let random = Math.random() * totalWeight;
-
-		for (const [type, weight] of Object.entries(APPLE_SPAWN_WEIGHTS) as Array<
-			[SpawnableAppleType, number]
-		>) {
-			random -= weight;
-			if (random <= 0) {
-				return type;
-			}
-		}
-
-		return 'classic';
+		return getRandomWeightedType();
 	}
 
 	function buildApple(type: AppleType, position: Position, now = Date.now()): Apple {
@@ -233,29 +260,181 @@
 		};
 	}
 
-	function spawnApple(): Apple | null {
+	function canSpawnForcedType(type: SpawnableAppleType) {
+		if (!isSpecialAppleType(type)) {
+			return true;
+		}
+
+		const specialAppleCount = apples.value.filter((apple) => isSpecialAppleType(apple.type)).length;
+		return specialAppleCount < MAX_SPECIAL_APPLES;
+	}
+
+	function getPendingBonusChainSpawnType() {
+		const target = currentBonusChainTarget.value;
+		if (!target) return null;
+		if (apples.value.some((apple) => apple.type === target)) return null;
+		return target;
+	}
+
+	function spawnApple(forcedType?: SpawnableAppleType | null): Apple | null {
 		const position = getRandomEmptyCell();
 		if (!position) {
 			return null;
 		}
 
-		const type = chooseSpawnType();
+		const type = forcedType && canSpawnForcedType(forcedType) ? forcedType : chooseSpawnType();
 		const now = Date.now();
 		return buildApple(type, position, now);
 	}
 
+	function findBonusChainReplacementIndex(target: SpawnableAppleType) {
+		const candidateIndexes = apples.value
+			.map((apple, index) => ({ apple, index }))
+			.filter(({ apple }) => apple.type !== target);
+		if (candidateIndexes.length === 0) {
+			return -1;
+		}
+
+		const targetIsSpecial = isSpecialAppleType(target);
+		candidateIndexes.sort((a, b) => {
+			const aPriority = getBonusChainReplacementPriority(a.apple.type, targetIsSpecial);
+			const bPriority = getBonusChainReplacementPriority(b.apple.type, targetIsSpecial);
+			return aPriority - bPriority;
+		});
+
+		return candidateIndexes[0]?.index ?? -1;
+	}
+
+	function getBonusChainReplacementPriority(type: AppleType, targetIsSpecial: boolean) {
+		if (targetIsSpecial) {
+			if (isSpecialAppleType(type)) return 0;
+			if (type === 'rotten') return 1;
+			return 2;
+		}
+
+		if (type === 'rotten') return 0;
+		if (type === 'classic') return 1;
+		if (isSpecialAppleType(type)) return 2;
+		return 3;
+	}
+
+	function ensureCurrentBonusChainTargetAvailable() {
+		const target = currentBonusChainTarget.value;
+		if (!target) return;
+		if (apples.value.some((apple) => apple.type === target)) return;
+
+		const replacementIndex = findBonusChainReplacementIndex(target);
+		if (replacementIndex < 0) return;
+
+		const replacement = apples.value[replacementIndex];
+		if (!replacement) return;
+
+		const nextApple = buildApple(target, replacement.position);
+		apples.value = apples.value.map((apple, index) =>
+			index === replacementIndex ? { ...nextApple, id: apple.id } : apple
+		);
+	}
+
 	function fillApplesToCap() {
 		while (apples.value.length < currentAppleCap.value) {
-			const newApple = spawnApple();
+			const newApple = spawnApple(getPendingBonusChainSpawnType());
 			if (!newApple) {
 				break;
 			}
 			apples.value.push(newApple);
 		}
+
+		ensureCurrentBonusChainTargetAvailable();
 	}
 
 	function removeApple(id: string) {
 		apples.value = apples.value.filter((apple) => apple.id !== id);
+	}
+
+	function clearBonusChain() {
+		bonusChain.value = null;
+	}
+
+	function startBonusChain() {
+		if (bonusChain.value || status.value !== 'playing') {
+			return;
+		}
+
+		const availableTypes = apples.value
+			.filter((apple) => apple.type !== 'rotten')
+			.map((apple) => apple.type as SpawnableAppleType);
+		if (availableTypes.length === 0) {
+			return;
+		}
+
+		const firstStep = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+		if (!firstStep) {
+			return;
+		}
+
+		const steps: SpawnableAppleType[] = [firstStep];
+		while (steps.length < BONUS_CHAIN_LENGTH) {
+			steps.push(getRandomWeightedType());
+		}
+
+		bonusChain.value = {
+			steps,
+			currentIndex: 0,
+			startedAt: Date.now()
+		};
+
+		ensureCurrentBonusChainTargetAvailable();
+	}
+
+	function maybeTriggerBonusChain() {
+		if (bonusChain.value || status.value !== 'playing') {
+			return;
+		}
+
+		if (Math.random() <= BONUS_CHAIN_TRIGGER_CHANCE) {
+			startBonusChain();
+		}
+	}
+
+	function clearBonusChainTimer() {
+		if (bonusChainTimer.value) {
+			clearTimeout(bonusChainTimer.value);
+			bonusChainTimer.value = null;
+		}
+	}
+
+	function scheduleBonusChainCheck() {
+		clearBonusChainTimer();
+		if (status.value !== 'playing') return;
+
+		bonusChainTimer.value = window.setTimeout(() => {
+			maybeTriggerBonusChain();
+			scheduleBonusChainCheck();
+		}, getRandomBonusChainDelay());
+	}
+
+	function handleBonusChainAppleEat(eatenApple: Apple) {
+		const chain = bonusChain.value;
+		const target = currentBonusChainTarget.value;
+		if (!chain || !target) {
+			return;
+		}
+
+		if (eatenApple.type !== target) {
+			clearBonusChain();
+			return;
+		}
+
+		if (chain.currentIndex >= chain.steps.length - 1) {
+			score.value += BONUS_CHAIN_COMPLETION_BONUS;
+			clearBonusChain();
+			return;
+		}
+
+		bonusChain.value = {
+			...chain,
+			currentIndex: chain.currentIndex + 1
+		};
 	}
 
 	function replaceSpeedEffect(type: 'turbo' | 'chill', durationMs: number, pointsDelta: number) {
@@ -292,6 +471,7 @@
 
 	function applyAppleEffect(eatenApple: Apple) {
 		const mult = displayMultiplier.value;
+		handleBonusChainAppleEat(eatenApple);
 
 		switch (eatenApple.type) {
 			case 'classic':
@@ -554,9 +734,12 @@
 			clearTimeout(gameLoop.value);
 			gameLoop.value = null;
 		}
+		clearBonusChainTimer();
 	}
 
 	function initGame() {
+		stopGame();
+
 		const centerX = Math.floor(mapWidth.value / 2);
 		const centerY = Math.floor(mapHeight.value / 2);
 
@@ -572,6 +755,7 @@
 		pointsMultiplier.value = 1.0;
 		activeEffects.value = [];
 		apples.value = [];
+		bonusChain.value = null;
 		nextAppleId = 0;
 		fillApplesToCap();
 		status.value = 'playing';
@@ -583,6 +767,7 @@
 		drawGame();
 
 		scheduleNextTick();
+		scheduleBonusChainCheck();
 	}
 
 	async function handleUploadScore() {
@@ -654,43 +839,11 @@
 				aria-label="Game play area"
 			>
 				<div class="grid min-w-0 gap-4">
-					<section
-						class="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-2.5"
-						aria-label="Game status"
-					>
-						<div
-							class="rounded-evosnake border-evosnake-border bg-evosnake-surface shadow-evosnakeCard grid min-h-16 content-center gap-1 border px-3.5 py-3"
-						>
-							<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
-								Score
-							</div>
-							<div class="text-evosnake-text truncate text-lg font-black tracking-[-0.03em]">
-								{{ score.toLocaleString() }}
-							</div>
-						</div>
-
-						<div
-							class="rounded-evosnake border-evosnake-border bg-evosnake-surface shadow-evosnakeCard grid min-h-16 content-center gap-1 border px-3.5 py-3"
-						>
-							<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
-								Multiplier
-							</div>
-							<div class="text-evosnake-text truncate text-lg font-black tracking-[-0.03em]">
-								x{{ displayMultiplier.toFixed(2) }}
-							</div>
-						</div>
-
-						<div
-							class="rounded-evosnake border-evosnake-border bg-evosnake-surface shadow-evosnakeCard grid min-h-16 content-center gap-1 border px-3.5 py-3"
-						>
-							<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
-								Mode
-							</div>
-							<div class="text-evosnake-text truncate text-lg font-black tracking-[-0.03em]">
-								{{ currentConfig.label }}
-							</div>
-						</div>
-					</section>
+					<GameStatusPanel
+						:score="score"
+						:multiplier="displayMultiplier"
+						:mode-label="currentConfig.label"
+					/>
 
 					<section
 						class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakePanel border p-2.5 md:p-3.5"
@@ -722,184 +875,31 @@
 				</div>
 
 				<div class="grid min-w-0 gap-4">
-					<section
+					<ActiveEffectsPanel
 						v-if="activeEffectsList.length > 0"
-						class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakeCard border p-3.5 md:p-4.5"
-						aria-label="Active effects"
-					>
-						<div class="text-evosnake-muted mb-2 text-xs font-extrabold tracking-wider uppercase">
-							Active Effects
-						</div>
-						<div class="grid gap-1.5">
-							<div
-								v-for="effect in activeEffectsList"
-								:key="effect.type"
-								class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 flex items-center justify-between border px-3 py-1.5"
-							>
-								<div class="flex items-center gap-2">
-									<AppleIcon
-										:size="14"
-										:color="effect.color"
-										aria-hidden="true"
-									/>
-									<span class="text-evosnake-text text-sm font-bold">{{ effect.label }}</span>
-								</div>
-								<span class="text-evosnake-muted font-mono text-xs">{{ effect.remaining }}s</span>
-							</div>
-						</div>
-					</section>
+						:effects="activeEffectsList"
+					/>
 
-					<section
-						class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakeCard grid justify-center border p-3.5 md:p-4.5"
-						aria-label="On-screen controls"
-					>
-						<div class="grid grid-cols-3 grid-rows-2 gap-2">
-							<button
-								class="arrow-key rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary hover:bg-evosnake-surface3 active:bg-evosnake-primary col-start-2 row-start-1 grid size-13.5 touch-manipulation place-items-center border text-2xl font-black select-none active:text-[#08100b] md:size-14.5"
-								type="button"
-								aria-label="Move up"
-								@click="setDirection('up')"
-							>
-								<ArrowUp :size="20" />
-							</button>
-							<button
-								class="arrow-key rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary hover:bg-evosnake-surface3 active:bg-evosnake-primary col-start-1 row-start-2 grid size-13.5 touch-manipulation place-items-center border text-2xl font-black select-none active:text-[#08100b] md:size-14.5"
-								type="button"
-								aria-label="Move left"
-								@click="setDirection('left')"
-							>
-								<ArrowLeftIcon :size="20" />
-							</button>
-							<button
-								class="arrow-key rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary hover:bg-evosnake-surface3 active:bg-evosnake-primary col-start-2 row-start-2 grid size-13.5 touch-manipulation place-items-center border text-2xl font-black select-none active:text-[#08100b] md:size-14.5"
-								type="button"
-								aria-label="Move down"
-								@click="setDirection('down')"
-							>
-								<ArrowDown :size="20" />
-							</button>
-							<button
-								class="arrow-key rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary hover:bg-evosnake-surface3 active:bg-evosnake-primary col-start-3 row-start-2 grid size-13.5 touch-manipulation place-items-center border text-2xl font-black select-none active:text-[#08100b] md:size-14.5"
-								type="button"
-								aria-label="Move right"
-								@click="setDirection('right')"
-							>
-								<ArrowRight :size="20" />
-							</button>
-						</div>
-					</section>
+					<BonusChainPanel
+						v-if="bonusChain"
+						:steps="bonusChainSteps"
+						:bonus-amount="BONUS_CHAIN_COMPLETION_BONUS"
+					/>
+
+					<OnScreenControlsPanel @move="setDirection" />
 				</div>
 			</section>
 		</section>
 
-		<Teleport to="body">
-			<div
-				v-if="showGameOver"
-				class="fixed inset-0 z-50 grid place-items-center bg-black/70 px-4 py-5"
-			>
-				<section
-					role="dialog"
-					aria-modal="true"
-					aria-labelledby="game-over-title"
-					class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakePanel w-full max-w-md border p-6"
-				>
-					<div class="mb-4 flex items-center justify-between">
-						<h2
-							id="game-over-title"
-							class="text-evosnake-text flex items-center gap-2 text-xl font-extrabold"
-						>
-							<Trophy
-								class="text-evosnake-primary h-6 w-6"
-								aria-hidden="true"
-							/>
-							Game Over
-						</h2>
-						<button
-							type="button"
-							aria-label="Close game over"
-							class="text-evosnake-muted hover:text-evosnake-text rounded-lg p-1"
-							@click="handleCloseGameOver"
-						>
-							<X
-								class="h-5 w-5"
-								aria-hidden="true"
-							/>
-						</button>
-					</div>
-
-					<div class="mb-5 grid gap-3">
-						<div
-							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid gap-1 border px-4 py-3"
-						>
-							<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
-								Final Score
-							</div>
-							<div class="text-evosnake-text text-2xl font-black">
-								{{ score.toLocaleString() }}
-							</div>
-						</div>
-
-						<div class="grid grid-cols-2 gap-3">
-							<div
-								class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid gap-1 border px-3 py-2.5"
-							>
-								<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
-									Mode
-								</div>
-								<div class="text-evosnake-text text-sm font-bold">
-									{{ currentConfig.label }}
-								</div>
-							</div>
-							<div
-								class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid gap-1 border px-3 py-2.5"
-							>
-								<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
-									Length
-								</div>
-								<div class="text-evosnake-text text-sm font-bold">
-									{{ snakeBody.length }}
-								</div>
-							</div>
-						</div>
-
-						<div
-							v-if="uploadError"
-							class="rounded-evosnake border-evosnake-danger bg-evosnake-danger/10 text-evosnake-danger border px-3 py-2 text-sm"
-						>
-							{{ uploadError }}
-						</div>
-						<div
-							v-else-if="isUploading"
-							class="text-evosnake-muted text-center text-sm"
-						>
-							Uploading score...
-						</div>
-						<div
-							v-else
-							class="text-evosnake-primary text-center text-sm"
-						>
-							Score uploaded
-						</div>
-					</div>
-
-					<div class="grid grid-cols-2 gap-3">
-						<button
-							type="button"
-							class="rounded-evosnake bg-evosnake-primary hover:bg-evosnake-primaryHover px-4 py-2.5 font-bold text-[#08100b] transition-colors"
-							@click="handlePlayAgain"
-						>
-							Play Again
-						</button>
-						<button
-							type="button"
-							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary border px-4 py-2.5 font-bold transition-colors"
-							@click="handleCloseGameOver"
-						>
-							Main Menu
-						</button>
-					</div>
-				</section>
-			</div>
-		</Teleport>
+		<GameOverDialog
+			:open="showGameOver"
+			:score="score"
+			:mode-label="currentConfig.label"
+			:length="snakeBody.length"
+			:is-uploading="isUploading"
+			:upload-error="uploadError"
+			@close="handleCloseGameOver"
+			@play-again="handlePlayAgain"
+		/>
 	</main>
 </template>

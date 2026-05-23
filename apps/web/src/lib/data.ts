@@ -33,6 +33,12 @@ export interface DifficultyConfig {
 	specialAppleLifetimeMs: number;
 }
 
+export interface BonusChainState {
+	steps: SpawnableAppleType[];
+	currentIndex: number;
+	startedAt: number;
+}
+
 export const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
 	easy: { label: 'Easy', mapWidth: 24, mapHeight: 24, tickMs: 200, specialAppleLifetimeMs: 9000 },
 	normal: {
@@ -75,7 +81,13 @@ export const APPLE_SPAWN_WEIGHTS: Record<SpawnableAppleType, number> = {
 	golden: 7
 };
 
+export const BONUS_CHAIN_LENGTH = 4;
+export const BONUS_CHAIN_TRIGGER_MIN_MS = 15_000;
+export const BONUS_CHAIN_TRIGGER_MAX_MS = 20_000;
+export const BONUS_CHAIN_TRIGGER_CHANCE = 0.05;
+
 export const BASE_POINTS = 20;
+export const BONUS_CHAIN_COMPLETION_BONUS = BASE_POINTS * BONUS_CHAIN_LENGTH;
 export const MIN_SNAKE_LENGTH = 3;
 export const STARTING_SNAKE_LENGTH = 3;
 export const MIN_POINTS_MULTIPLIER = 0.25;
