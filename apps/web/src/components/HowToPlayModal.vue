@@ -91,24 +91,24 @@
 								>
 									<div class="flex justify-center gap-1.5">
 										<kbd
-											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
+											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner select-none"
 										>
 											W
 										</kbd>
 									</div>
 									<div class="flex justify-center gap-1.5">
 										<kbd
-											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
+											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner select-none"
 										>
 											A
 										</kbd>
 										<kbd
-											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
+											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner select-none"
 										>
 											S
 										</kbd>
 										<kbd
-											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
+											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner select-none"
 										>
 											D
 										</kbd>
