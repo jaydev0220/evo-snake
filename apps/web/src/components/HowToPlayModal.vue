@@ -1,30 +1,107 @@
 <script setup lang="ts">
-	import { Apple, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, X } from '@lucide/vue';
-	import { ref, watch, nextTick } from 'vue';
+	import { X } from '@lucide/vue';
+	import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 
-	import { FRUIT_GUIDE, APPLE_COLORS, BONUS_CHAIN_COMPLETION_BONUS } from '../lib/data';
+	import { FRUIT_GUIDE } from '../lib/data';
+	import { CONTROL_GUIDE_CARDS, EVENT_GUIDE_ITEMS, type GuideTab } from '../lib/how-to-play';
+	import HowToPlayApplesTab from './HowToPlayApplesTab.vue';
+	import HowToPlayControlsTab from './HowToPlayControlsTab.vue';
+	import HowToPlayEventsTab from './HowToPlayEventsTab.vue';
 
 	const isOpen = defineModel<boolean>({ required: true });
 
+	const activeTab = ref<GuideTab>('controls');
 	const modalRef = ref<HTMLElement | null>(null);
 	let triggerElement: HTMLElement | null = null;
+
+	const tabs = computed(() => [
+		{ id: 'controls' as const, label: 'Controls', detail: `${CONTROL_GUIDE_CARDS.length} methods` },
+		{ id: 'apples' as const, label: 'Apples', detail: `${FRUIT_GUIDE.length} types` },
+		{ id: 'events' as const, label: 'Events', detail: `${EVENT_GUIDE_ITEMS.length} events` }
+	]);
 
 	function close() {
 		isOpen.value = false;
 	}
 
-	function onKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') close();
+	function selectTab(tab: GuideTab) {
+		activeTab.value = tab;
+	}
+
+	function getTabId(tab: GuideTab) {
+		return `play-guide-tab-${tab}`;
+	}
+
+	function getPanelId(tab: GuideTab) {
+		return `play-guide-panel-${tab}`;
+	}
+
+	function getFocusableElements() {
+		if (!modalRef.value) return [];
+		const focusableSelector =
+			'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+		return Array.from(modalRef.value.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+			(element) => {
+				const style = window.getComputedStyle(element);
+				return style.display !== 'none' && style.visibility !== 'hidden';
+			}
+		);
+	}
+
+	function onDocumentKeydown(event: KeyboardEvent) {
+		if (!isOpen.value) return;
+
+		if (event.key === 'Escape') {
+			event.preventDefault();
+			close();
+			return;
+		}
+
+		if (event.key !== 'Tab') return;
+
+		const focusableElements = getFocusableElements();
+
+		if (focusableElements.length === 0) {
+			event.preventDefault();
+			modalRef.value?.focus();
+			return;
+		}
+
+		const first = focusableElements[0]!;
+		const last = focusableElements.at(-1)!;
+		const activeElement = document.activeElement as HTMLElement | null;
+
+		if (event.shiftKey) {
+			if (!activeElement || activeElement === first || !modalRef.value?.contains(activeElement)) {
+				event.preventDefault();
+				last.focus();
+			}
+			return;
+		}
+
+		if (!activeElement || activeElement === last || !modalRef.value?.contains(activeElement)) {
+			event.preventDefault();
+			first.focus();
+		}
 	}
 
 	watch(isOpen, async (open) => {
 		if (open) {
-			triggerElement = document.activeElement as HTMLElement;
+			triggerElement = document.activeElement as HTMLElement | null;
+			document.addEventListener('keydown', onDocumentKeydown);
 			await nextTick();
 			modalRef.value?.focus();
-		} else if (triggerElement) {
-			triggerElement.focus();
+			return;
 		}
+
+		document.removeEventListener('keydown', onDocumentKeydown);
+		activeTab.value = 'controls';
+		triggerElement?.focus();
+	});
+
+	onBeforeUnmount(() => {
+		document.removeEventListener('keydown', onDocumentKeydown);
 	});
 </script>
 
@@ -33,7 +110,7 @@
 		<div
 			v-if="isOpen"
 			class="fixed inset-0 z-50 grid place-items-center bg-black/60 px-4 py-5"
-			@keydown="onKeydown"
+			@click.self="close"
 		>
 			<section
 				ref="modalRef"
@@ -41,17 +118,22 @@
 				aria-modal="true"
 				aria-labelledby="play-guide-title"
 				tabindex="-1"
-				class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakePanel max-h-[calc(100vh-40px)] w-full max-w-170 overflow-hidden border outline-none md:max-h-[calc(100vh-96px)]"
+				class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakePanel grid max-h-[calc(100vh-40px)] w-full max-w-205 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden border outline-none md:max-h-180"
 			>
 				<header
-					class="border-evosnake-border flex items-center justify-between gap-4 border-b px-4 py-4 md:px-5"
+					class="border-evosnake-border grid grid-cols-[1fr_auto] items-center gap-4 border-b px-4 py-4 md:px-5"
 				>
-					<h2
-						id="play-guide-title"
-						class="text-evosnake-text text-2xl leading-none font-extrabold tracking-[-0.04em]"
-					>
-						How to Play
-					</h2>
+					<div class="min-w-0">
+						<h2
+							id="play-guide-title"
+							class="text-evosnake-text text-2xl leading-none font-extrabold tracking-[-0.04em]"
+						>
+							How to Play
+						</h2>
+						<p class="text-evosnake-muted mt-1.5 hidden text-sm leading-snug md:block">
+							Learn the controls, apple effects, and live events before your next run.
+						</p>
+					</div>
 
 					<button
 						type="button"
@@ -66,160 +148,58 @@
 					</button>
 				</header>
 
-				<div
-					class="grid max-h-[calc(100vh-120px)] gap-6 overflow-y-auto px-4 py-5 md:max-h-[calc(100vh-176px)] md:px-5"
+				<nav
+					class="border-evosnake-border grid grid-cols-3 gap-1.5 border-b p-2.5 md:gap-2 md:px-4"
+					aria-label="Play guide sections"
+					role="tablist"
 				>
-					<section
-						class="grid gap-3"
-						aria-labelledby="controls-title"
+					<button
+						v-for="tab in tabs"
+						:key="tab.id"
+						:id="getTabId(tab.id)"
+						type="button"
+						role="tab"
+						:aria-selected="activeTab === tab.id"
+						:aria-controls="getPanelId(tab.id)"
+						class="rounded-evosnake border px-2 py-2.5 text-center transition-colors"
+						:class="
+							activeTab === tab.id
+								? 'border-evosnake-primary bg-evosnake-surface2 text-evosnake-text'
+								: 'border-evosnake-border bg-evosnake-bg text-evosnake-muted hover:bg-evosnake-surface2 hover:text-evosnake-text'
+						"
+						@click="selectTab(tab.id)"
 					>
-						<h3
-							id="controls-title"
-							class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase"
-						>
-							Controls
-						</h3>
+						<strong class="block text-sm font-extrabold">{{ tab.label }}</strong>
+						<span class="hidden text-xs sm:block">{{ tab.detail }}</span>
+					</button>
+				</nav>
 
-						<div class="grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr_auto_1fr]">
-							<div
-								class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 border p-4 text-center"
-							>
-								<div class="text-evosnake-text mb-3 font-extrabold">WASD</div>
-								<div
-									class="grid justify-center gap-1.5"
-									aria-label="WASD movement keys"
-								>
-									<div class="flex justify-center gap-1.5">
-										<kbd
-											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner select-none"
-										>
-											W
-										</kbd>
-									</div>
-									<div class="flex justify-center gap-1.5">
-										<kbd
-											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner select-none"
-										>
-											A
-										</kbd>
-										<kbd
-											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner select-none"
-										>
-											S
-										</kbd>
-										<kbd
-											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner select-none"
-										>
-											D
-										</kbd>
-									</div>
-								</div>
-							</div>
-
-							<div
-								class="text-evosnake-muted text-center text-xs font-black tracking-wider uppercase"
-							>
-								or
-							</div>
-
-							<div
-								class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 border p-4 text-center"
-							>
-								<div class="text-evosnake-text mb-3 font-extrabold">Arrow Keys</div>
-								<div
-									class="grid justify-center gap-1.5"
-									aria-label="Arrow movement keys"
-								>
-									<div class="flex justify-center gap-1.5">
-										<kbd
-											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
-										>
-											<ArrowUp :size="20" />
-										</kbd>
-									</div>
-									<div class="flex justify-center gap-1.5">
-										<kbd
-											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
-										>
-											<ArrowLeft :size="20" />
-										</kbd>
-										<kbd
-											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
-										>
-											<ArrowDown :size="20" />
-										</kbd>
-										<kbd
-											class="border-evosnake-border bg-evosnake-bg text-evosnake-text grid size-10.5 place-items-center rounded-[10px] border text-sm font-black shadow-inner"
-										>
-											<ArrowRight :size="20" />
-										</kbd>
-									</div>
-								</div>
-							</div>
-						</div>
+				<div class="min-h-0 overflow-y-auto p-4 md:p-5">
+					<section
+						v-if="activeTab === 'controls'"
+						:id="getPanelId('controls')"
+						:aria-labelledby="getTabId('controls')"
+						role="tabpanel"
+					>
+						<HowToPlayControlsTab />
 					</section>
 
 					<section
-						class="grid gap-3"
-						aria-labelledby="fruits-title"
+						v-else-if="activeTab === 'apples'"
+						:id="getPanelId('apples')"
+						:aria-labelledby="getTabId('apples')"
+						role="tabpanel"
 					>
-						<h3
-							id="fruits-title"
-							class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase"
-						>
-							Fruits
-						</h3>
-
-						<div class="grid gap-2.5">
-							<div
-								v-for="fruit in FRUIT_GUIDE"
-								:key="fruit.id"
-								class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid grid-cols-[40px_1fr] items-start gap-3 border p-3 md:grid-cols-[44px_1fr]"
-							>
-								<div
-									class="bg-evosnake-bg grid size-10 place-items-center rounded-xl text-xl md:size-11 md:text-2xl"
-									aria-hidden="true"
-								>
-									<Apple
-										:color="APPLE_COLORS[fruit.id].outline"
-										:fill="APPLE_COLORS[fruit.id].fill"
-									/>
-								</div>
-
-								<div class="min-w-0">
-									<div class="text-evosnake-text font-extrabold">
-										{{ fruit.name }}
-									</div>
-									<p class="text-evosnake-muted mt-1 text-sm leading-6">
-										{{ fruit.effect }}
-									</p>
-								</div>
-							</div>
-						</div>
+						<HowToPlayApplesTab />
 					</section>
 
 					<section
-						class="grid gap-3"
-						aria-labelledby="bonus-chain-title"
+						v-else
+						:id="getPanelId('events')"
+						:aria-labelledby="getTabId('events')"
+						role="tabpanel"
 					>
-						<h3
-							id="bonus-chain-title"
-							class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase"
-						>
-							Bonus Chain
-						</h3>
-
-						<div
-							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid gap-2 border p-3"
-						>
-							<p class="text-evosnake-text text-sm font-bold">
-								Rarely, a 4-step bonus chain appears beside the board.
-							</p>
-							<p class="text-evosnake-muted text-sm leading-6">
-								Eat apples in the shown order to claim +{{ BONUS_CHAIN_COMPLETION_BONUS }}. Eating
-								any other apple ends the event immediately.
-							</p>
-						</div>
+						<HowToPlayEventsTab />
 					</section>
 				</div>
 			</section>
