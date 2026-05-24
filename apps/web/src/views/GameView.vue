@@ -6,14 +6,14 @@
 	import BonusChainPanel from '../components/BonusChainPanel.vue';
 	import GameOverDialog from '../components/GameOverDialog.vue';
 	import GameStatusPanel from '../components/GameStatusPanel.vue';
-	import OnScreenControlsPanel from '../components/OnScreenControlsPanel.vue';
 	import {
 		APPLE_COLORS,
 		BOARD_BG,
 		BONUS_CHAIN_COMPLETION_BONUS,
 		GRID_COLOR,
 		SNAKE_COLORS,
-		type AppleType
+		type AppleType,
+		type Direction
 	} from '../lib/data';
 	import { directionToVector } from '../lib/game/geometry';
 	import { useSnakeGame } from '../lib/game/useSnakeGame';
@@ -56,6 +56,10 @@
 
 	const isUploading = ref(false);
 	const uploadError = ref<string | null>(null);
+	const swipeStart = ref<{ x: number; y: number; time: number } | null>(null);
+
+	const SWIPE_THRESHOLD = 10;
+	const SWIPE_MAX_AGE_MS = 500;
 
 	function resizeCanvas() {
 		const canvas = canvasRef.value;
@@ -70,6 +74,30 @@
 	function handleResize() {
 		resizeCanvas();
 		drawGame();
+	}
+
+	function handleCanvasPointerDown(event: PointerEvent) {
+		swipeStart.value = { x: event.clientX, y: event.clientY, time: Date.now() };
+	}
+
+	function handleCanvasPointerUp(event: PointerEvent) {
+		const start = swipeStart.value;
+		if (!start || !snakeBody.value.length) {
+			swipeStart.value = null;
+			return;
+		}
+		swipeStart.value = null;
+
+		if (Date.now() - start.time > SWIPE_MAX_AGE_MS) return;
+
+		const dx = event.clientX - start.x;
+		const dy = event.clientY - start.y;
+		const dist = Math.hypot(dx, dy);
+		if (dist < SWIPE_THRESHOLD) return;
+
+		const direction: Direction =
+			Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
+		setDirection(direction);
 	}
 
 	function drawGame() {
@@ -257,7 +285,9 @@
 						>
 							<canvas
 								ref="canvasRef"
-								class="block size-full"
+								class="block size-full touch-none"
+								@pointerdown="handleCanvasPointerDown"
+								@pointerup="handleCanvasPointerUp"
 							/>
 
 							<div
@@ -287,8 +317,6 @@
 						:steps="bonusChainSteps"
 						:bonus-amount="BONUS_CHAIN_COMPLETION_BONUS"
 					/>
-
-					<OnScreenControlsPanel @move="setDirection" />
 				</div>
 			</section>
 		</section>
