@@ -93,6 +93,7 @@ export const APPLE_SPAWN_WEIGHTS: Record<SpawnableAppleType, number> = {
 };
 
 export const BONUS_CHAIN_LENGTH = 4;
+export const BONUS_CHAIN_MAX_DUPLICATE_PER_TYPE = 2;
 export const BONUS_CHAIN_TRIGGER_MIN_MS = 15_000;
 export const BONUS_CHAIN_TRIGGER_MAX_MS = 20_000;
 export const BONUS_CHAIN_TRIGGER_CHANCE = 0.05;

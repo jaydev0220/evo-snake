@@ -1,5 +1,7 @@
 import {
+	APPLE_SPAWN_WEIGHTS,
 	BONUS_CHAIN_LENGTH,
+	BONUS_CHAIN_MAX_DUPLICATE_PER_TYPE,
 	BONUS_CHAIN_TRIGGER_CHANCE,
 	BONUS_CHAIN_TRIGGER_MAX_MS,
 	BONUS_CHAIN_TRIGGER_MIN_MS,
@@ -70,7 +72,11 @@ export function createBonusChain(apples: Apple[], now = Date.now()): BonusChainS
 
 	const steps: SpawnableAppleType[] = [firstStep];
 	while (steps.length < BONUS_CHAIN_LENGTH) {
-		steps.push(getRandomWeightedType());
+		const nextType = getNextBonusChainType(steps);
+		if (!nextType) {
+			return null;
+		}
+		steps.push(nextType);
 	}
 
 	return {
@@ -112,6 +118,22 @@ export function getPendingBonusChainSpawnType(chain: BonusChainState | null, app
 	if (!target) return null;
 	if (apples.some((apple) => apple.type === target)) return null;
 	return target;
+}
+
+function getNextBonusChainType(steps: SpawnableAppleType[]) {
+	const counts = new Map<SpawnableAppleType, number>();
+	for (const type of steps) {
+		counts.set(type, (counts.get(type) ?? 0) + 1);
+	}
+
+	const eligibleTypes = (Object.keys(APPLE_SPAWN_WEIGHTS) as SpawnableAppleType[]).filter(
+		(type) => (counts.get(type) ?? 0) < BONUS_CHAIN_MAX_DUPLICATE_PER_TYPE
+	);
+	if (eligibleTypes.length === 0) {
+		return null;
+	}
+
+	return getRandomWeightedType(eligibleTypes);
 }
 
 export function ensureCurrentBonusChainTargetAvailable({
