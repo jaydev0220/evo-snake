@@ -1,5 +1,6 @@
 import {
 	BASE_POINTS,
+	CHILL_APPLE_POINTS,
 	CHILL_DURATION_MS,
 	CHILL_POINTS_DELTA,
 	CHILL_SPEED_MULTIPLIER,
@@ -36,6 +37,7 @@ export interface AppleEffectInput {
 	pointsMultiplier: number;
 	activeEffects: ActiveEffect[];
 	displayMultiplier: number;
+	iceAgeActive?: boolean;
 	now?: number;
 }
 
@@ -45,6 +47,7 @@ export interface AppleEffectResult {
 	snakeBody: Position[];
 	pointsMultiplier: number;
 	activeEffects: ActiveEffect[];
+	extraForwardSteps: number;
 }
 
 export function getDisplayMultiplier(pointsMultiplier: number, activeEffects: ActiveEffect[]) {
@@ -91,6 +94,7 @@ export function applyAppleEffect({
 	pointsMultiplier,
 	activeEffects,
 	displayMultiplier,
+	iceAgeActive = false,
 	now = Date.now()
 }: AppleEffectInput): AppleEffectResult {
 	let nextScore = score;
@@ -98,6 +102,7 @@ export function applyAppleEffect({
 	let nextSnakeBody = snakeBody;
 	const nextPointsMultiplier = pointsMultiplier;
 	let nextActiveEffects = activeEffects;
+	let extraForwardSteps = 0;
 
 	switch (apple.type) {
 		case 'classic':
@@ -114,9 +119,14 @@ export function applyAppleEffect({
 			nextActiveEffects = replaceSpeedEffect(nextActiveEffects, 'turbo', TURBO_DURATION_MS, now);
 			break;
 		case 'chill':
-			nextScore += Math.round(BASE_POINTS * displayMultiplier);
 			nextTargetLength += CLASSIC_LENGTH_DELTA;
-			nextActiveEffects = replaceSpeedEffect(nextActiveEffects, 'chill', CHILL_DURATION_MS, now);
+			if (iceAgeActive) {
+				nextScore += CHILL_APPLE_POINTS;
+				extraForwardSteps = 1;
+			} else {
+				nextScore += Math.round(BASE_POINTS * displayMultiplier);
+				nextActiveEffects = replaceSpeedEffect(nextActiveEffects, 'chill', CHILL_DURATION_MS, now);
+			}
 			break;
 		case 'ghost':
 			nextScore += Math.round(BASE_POINTS * displayMultiplier);
@@ -136,8 +146,18 @@ export function applyAppleEffect({
 		targetLength: nextTargetLength,
 		snakeBody: nextSnakeBody,
 		pointsMultiplier: nextPointsMultiplier,
-		activeEffects: nextActiveEffects
+		activeEffects: nextActiveEffects,
+		extraForwardSteps
 	};
+}
+
+export function applySpeedEffect(
+	activeEffects: ActiveEffect[],
+	type: SpeedEffectType,
+	durationMs: number,
+	now = Date.now()
+) {
+	return replaceSpeedEffect(activeEffects, type, durationMs, now);
 }
 
 function replaceSpeedEffect(

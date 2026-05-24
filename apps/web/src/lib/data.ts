@@ -40,7 +40,7 @@ export interface BonusChainState {
 	startedAt: number;
 }
 
-export type GameEventType = 'bonusChain' | 'goldRush';
+export type GameEventType = 'bonusChain' | 'goldRush' | 'iceAge';
 
 export interface GameEventTheme {
 	label: string;
@@ -100,11 +100,13 @@ export const GAME_EVENT_TRIGGER_MAX_MS = 20_000;
 export const GAME_EVENT_TRIGGER_CHANCE = 0.05;
 export const GAME_EVENT_TRIGGER_WEIGHTS: Record<GameEventType, number> = {
 	bonusChain: 4,
-	goldRush: 1
+	goldRush: 1,
+	iceAge: 4
 };
-export const GOLD_RUSH_DURATION_MS = 8_000;
+export const GOLD_RUSH_DURATION_MS = 10_000;
 export const GOLD_RUSH_SPECIAL_LIFETIME_MULTIPLIER = 0.4;
 export const GOLD_RUSH_ROTTEN_LIFETIME_MULTIPLIER = 1.5;
+export const ICE_AGE_DURATION_MS = 12_000;
 
 export const GAME_EVENT_THEMES: Record<GameEventType, GameEventTheme> = {
 	bonusChain: {
@@ -122,11 +124,20 @@ export const GAME_EVENT_THEMES: Record<GameEventType, GameEventTheme> = {
 		surface: 'rgba(250, 204, 21, 0.16)',
 		targetGlow: 'rgba(250, 204, 21, 0.34)',
 		targetOutline: 'rgba(255, 247, 176, 0.96)'
+	},
+	iceAge: {
+		label: 'Ice Age',
+		accent: '#A5F3FC',
+		glow: 'rgba(34, 211, 238, 0.46)',
+		surface: 'rgba(125, 211, 252, 0.16)',
+		targetGlow: 'rgba(165, 243, 252, 0.28)',
+		targetOutline: 'rgba(224, 242, 254, 0.96)'
 	}
 };
 
 export const BASE_POINTS = 20;
 export const BONUS_CHAIN_COMPLETION_BONUS = BASE_POINTS * BONUS_CHAIN_LENGTH;
+export const CHILL_APPLE_POINTS = BASE_POINTS * 2;
 export const MIN_SNAKE_LENGTH = 3;
 export const STARTING_SNAKE_LENGTH = 3;
 export const MIN_POINTS_MULTIPLIER = 0.25;
@@ -175,7 +186,8 @@ export const FRUIT_GUIDE: FruitGuideItem[] = [
 	{
 		id: 'chill',
 		name: 'Chill Apple',
-		effect: 'Temporarily slows the snake down, but lowers the points multiplier.'
+		effect:
+			'Temporarily slows the snake down. During Ice Age, it instead grants double base points and a forward slip.'
 	},
 	{
 		id: 'ghost',

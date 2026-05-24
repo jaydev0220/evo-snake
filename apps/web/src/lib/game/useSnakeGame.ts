@@ -8,6 +8,7 @@ import {
 	GOLD_RUSH_DURATION_MS,
 	GOLD_RUSH_ROTTEN_LIFETIME_MULTIPLIER,
 	GOLD_RUSH_SPECIAL_LIFETIME_MULTIPLIER,
+	ICE_AGE_DURATION_MS,
 	MAX_APPLES_BY_DIFFICULTY,
 	ROTTEN_APPLE_LIFETIME_MS,
 	STARTING_SNAKE_LENGTH,
@@ -30,6 +31,7 @@ import {
 } from './bonus-chain';
 import {
 	applyAppleEffect,
+	applySpeedEffect,
 	clearExpiredEffects,
 	getActiveEffectsList,
 	getCurrentTickMs,
@@ -57,6 +59,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 	const apples = ref<Apple[]>([]);
 	const bonusChain = ref<BonusChainState | null>(null);
 	const goldRushEndsAt = ref<number | null>(null);
+	const iceAgeEndsAt = ref<number | null>(null);
 	const gameLoop = ref<number | null>(null);
 	const eventTimer = ref<number | null>(null);
 	const showGameOver = ref(false);
@@ -85,8 +88,15 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 	);
 	const bonusChainSteps = computed(() => getBonusChainSteps(bonusChain.value));
 	const isGoldRushActive = computed(() => goldRushEndsAt.value !== null);
+	const isIceAgeActive = computed(() => iceAgeEndsAt.value !== null);
 	const activeEventType = computed<GameEventType | null>(() =>
-		bonusChain.value ? 'bonusChain' : isGoldRushActive.value ? 'goldRush' : null
+		bonusChain.value
+			? 'bonusChain'
+			: isGoldRushActive.value
+				? 'goldRush'
+				: isIceAgeActive.value
+					? 'iceAge'
+					: null
 	);
 	const activeEventTheme = computed(() =>
 		activeEventType.value ? GAME_EVENT_THEMES[activeEventType.value] : null
@@ -243,6 +253,16 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		requestRender();
 	}
 
+	function startIceAge(now = Date.now()) {
+		if (activeEventType.value || status.value !== 'playing') {
+			return;
+		}
+
+		iceAgeEndsAt.value = now + ICE_AGE_DURATION_MS;
+		activeEffects.value = applySpeedEffect(activeEffects.value, 'chill', ICE_AGE_DURATION_MS, now);
+		requestRender();
+	}
+
 	function maybeTriggerGameEvent() {
 		if (activeEventType.value || status.value !== 'playing') {
 			return;
@@ -252,7 +272,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 			return;
 		}
 
-		const availableEvents: GameEventType[] = ['goldRush'];
+		const availableEvents: GameEventType[] = ['goldRush', 'iceAge'];
 		if (apples.value.some((apple) => apple.type !== 'rotten')) {
 			availableEvents.push('bonusChain');
 		}
@@ -265,6 +285,11 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 
 		if (nextEvent === 'goldRush') {
 			startGoldRush();
+			return;
+		}
+
+		if (nextEvent === 'iceAge') {
+			startIceAge();
 		}
 	}
 
@@ -306,6 +331,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 			pointsMultiplier: pointsMultiplier.value,
 			activeEffects: activeEffects.value,
 			displayMultiplier: multiplier,
+			iceAgeActive: isIceAgeActive.value,
 			now
 		});
 
@@ -315,7 +341,56 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		pointsMultiplier.value = result.pointsMultiplier;
 		activeEffects.value = result.activeEffects;
 		apples.value = removeApple(apples.value, eatenApple.id);
-		fillApplesToCap();
+		return result.extraForwardSteps;
+	}
+
+	function moveSnakeForwardOneTile() {
+		const head = snakeBody.value[0];
+		if (!head) {
+			return null;
+		}
+
+		const newHead = getNextPosition(head, snakeDirection.value);
+		if (isOutsideBounds(newHead, mapWidth.value, mapHeight.value)) {
+			triggerGameOver();
+			return null;
+		}
+
+		if (collidesWithSnakeBody(newHead, snakeBody.value, targetLength.value, isGhostActive.value)) {
+			triggerGameOver();
+			return null;
+		}
+
+		snakeBody.value.unshift(newHead);
+		while (snakeBody.value.length > targetLength.value) {
+			snakeBody.value.pop();
+		}
+
+		return apples.value.find((apple) => isSamePosition(newHead, apple.position)) ?? null;
+	}
+
+	function runMovementChain() {
+		let pendingSteps = 1;
+		let ateApple = false;
+
+		while (pendingSteps > 0 && status.value === 'playing') {
+			pendingSteps -= 1;
+			const eatenApple = moveSnakeForwardOneTile();
+			if (status.value !== 'playing') {
+				return;
+			}
+
+			if (!eatenApple) {
+				continue;
+			}
+
+			ateApple = true;
+			pendingSteps += applyEatenAppleEffect(eatenApple);
+		}
+
+		if (ateApple) {
+			fillApplesToCap();
+		}
 	}
 
 	function checkExpiredEffects() {
@@ -327,6 +402,10 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 	function checkEventExpiry(now = Date.now()) {
 		if (goldRushEndsAt.value && goldRushEndsAt.value <= now) {
 			goldRushEndsAt.value = null;
+			requestRender();
+		}
+		if (iceAgeEndsAt.value && iceAgeEndsAt.value <= now) {
+			iceAgeEndsAt.value = null;
 			requestRender();
 		}
 	}
@@ -354,28 +433,9 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		updateApplesForExpiry(now);
 
 		snakeDirection.value = queuedDirection.value;
-		const head = snakeBody.value[0];
-		if (!head) return;
-
-		const newHead = getNextPosition(head, snakeDirection.value);
-		if (isOutsideBounds(newHead, mapWidth.value, mapHeight.value)) {
-			triggerGameOver();
+		runMovementChain();
+		if (status.value !== 'playing') {
 			return;
-		}
-
-		if (collidesWithSnakeBody(newHead, snakeBody.value, targetLength.value, isGhostActive.value)) {
-			triggerGameOver();
-			return;
-		}
-
-		snakeBody.value.unshift(newHead);
-		while (snakeBody.value.length > targetLength.value) {
-			snakeBody.value.pop();
-		}
-
-		const eatenApple = apples.value.find((apple) => isSamePosition(newHead, apple.position));
-		if (eatenApple) {
-			applyEatenAppleEffect(eatenApple);
 		}
 
 		requestRender();
@@ -417,6 +477,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		apples.value = [];
 		bonusChain.value = null;
 		goldRushEndsAt.value = null;
+		iceAgeEndsAt.value = null;
 		nextAppleId = 0;
 		fillApplesToCap();
 		status.value = 'playing';
