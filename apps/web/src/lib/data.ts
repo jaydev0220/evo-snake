@@ -23,6 +23,7 @@ export interface Apple {
 	position: Position;
 	spawnedAt: number;
 	expiresAt: number | null;
+	rottenLifetimeMs?: number;
 }
 
 export interface DifficultyConfig {
@@ -39,7 +40,7 @@ export interface BonusChainState {
 	startedAt: number;
 }
 
-export type GameEventType = 'bonusChain';
+export type GameEventType = 'bonusChain' | 'goldRush';
 
 export interface GameEventTheme {
 	label: string;
@@ -94,18 +95,33 @@ export const APPLE_SPAWN_WEIGHTS: Record<SpawnableAppleType, number> = {
 
 export const BONUS_CHAIN_LENGTH = 4;
 export const BONUS_CHAIN_MAX_DUPLICATE_PER_TYPE = 2;
-export const BONUS_CHAIN_TRIGGER_MIN_MS = 15_000;
-export const BONUS_CHAIN_TRIGGER_MAX_MS = 20_000;
-export const BONUS_CHAIN_TRIGGER_CHANCE = 0.05;
+export const GAME_EVENT_TRIGGER_MIN_MS = 15_000;
+export const GAME_EVENT_TRIGGER_MAX_MS = 20_000;
+export const GAME_EVENT_TRIGGER_CHANCE = 0.05;
+export const GAME_EVENT_TRIGGER_WEIGHTS: Record<GameEventType, number> = {
+	bonusChain: 4,
+	goldRush: 1
+};
+export const GOLD_RUSH_DURATION_MS = 8_000;
+export const GOLD_RUSH_SPECIAL_LIFETIME_MULTIPLIER = 0.4;
+export const GOLD_RUSH_ROTTEN_LIFETIME_MULTIPLIER = 1.5;
 
 export const GAME_EVENT_THEMES: Record<GameEventType, GameEventTheme> = {
 	bonusChain: {
 		label: 'Bonus Chain',
-		accent: '#F5C84C',
-		glow: 'rgba(245, 200, 76, 0.46)',
-		surface: 'rgba(245, 200, 76, 0.14)',
-		targetGlow: 'rgba(245, 200, 76, 0.34)',
-		targetOutline: 'rgba(255, 241, 176, 0.94)'
+		accent: '#38BDF8',
+		glow: 'rgba(56, 189, 248, 0.48)',
+		surface: 'rgba(56, 189, 248, 0.14)',
+		targetGlow: 'rgba(56, 189, 248, 0.32)',
+		targetOutline: 'rgba(186, 230, 253, 0.96)'
+	},
+	goldRush: {
+		label: 'Gold Rush',
+		accent: '#FACC15',
+		glow: 'rgba(250, 204, 21, 0.5)',
+		surface: 'rgba(250, 204, 21, 0.16)',
+		targetGlow: 'rgba(250, 204, 21, 0.34)',
+		targetOutline: 'rgba(255, 247, 176, 0.96)'
 	}
 };
 

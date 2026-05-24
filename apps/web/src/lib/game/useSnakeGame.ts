@@ -5,7 +5,11 @@ import {
 	BONUS_CHAIN_COMPLETION_BONUS,
 	DIFFICULTIES,
 	GAME_EVENT_THEMES,
+	GOLD_RUSH_DURATION_MS,
+	GOLD_RUSH_ROTTEN_LIFETIME_MULTIPLIER,
+	GOLD_RUSH_SPECIAL_LIFETIME_MULTIPLIER,
 	MAX_APPLES_BY_DIFFICULTY,
+	ROTTEN_APPLE_LIFETIME_MS,
 	STARTING_SNAKE_LENGTH,
 	type ActiveEffect,
 	type Apple,
@@ -15,16 +19,14 @@ import {
 	type GameStatus,
 	type Position
 } from '../data';
-import { removeApple, spawnApple, updateExpiredApples } from './apples';
+import { normalizeSpawnableApples, removeApple, spawnApple, updateExpiredApples } from './apples';
 import {
 	advanceBonusChain,
 	createBonusChain,
 	ensureCurrentBonusChainTargetAvailable,
 	getCurrentBonusChainTarget,
 	getBonusChainSteps,
-	getPendingBonusChainSpawnType,
-	getRandomBonusChainDelay,
-	shouldTriggerBonusChain
+	getPendingBonusChainSpawnType
 } from './bonus-chain';
 import {
 	applyAppleEffect,
@@ -33,6 +35,7 @@ import {
 	getCurrentTickMs,
 	getDisplayMultiplier
 } from './effects';
+import { getRandomGameEventDelay, pickRandomGameEvent, shouldTriggerGameEvent } from './events';
 import {
 	areOpposite,
 	collidesWithSnakeBody,
@@ -53,8 +56,9 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 	const activeEffects = ref<ActiveEffect[]>([]);
 	const apples = ref<Apple[]>([]);
 	const bonusChain = ref<BonusChainState | null>(null);
+	const goldRushEndsAt = ref<number | null>(null);
 	const gameLoop = ref<number | null>(null);
-	const bonusChainTimer = ref<number | null>(null);
+	const eventTimer = ref<number | null>(null);
 	const showGameOver = ref(false);
 	const renderVersion = ref(0);
 
@@ -80,8 +84,9 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		activeEffects.value.some((effect) => effect.type === 'chill')
 	);
 	const bonusChainSteps = computed(() => getBonusChainSteps(bonusChain.value));
+	const isGoldRushActive = computed(() => goldRushEndsAt.value !== null);
 	const activeEventType = computed<GameEventType | null>(() =>
-		bonusChain.value ? 'bonusChain' : null
+		bonusChain.value ? 'bonusChain' : isGoldRushActive.value ? 'goldRush' : null
 	);
 	const activeEventTheme = computed(() =>
 		activeEventType.value ? GAME_EVENT_THEMES[activeEventType.value] : null
@@ -103,6 +108,35 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 	function getNextAppleId() {
 		nextAppleId += 1;
 		return `apple-${nextAppleId}`;
+	}
+
+	function getGoldRushSpecialLifetimeMs() {
+		return Math.max(
+			1,
+			Math.round(currentConfig.value.specialAppleLifetimeMs * GOLD_RUSH_SPECIAL_LIFETIME_MULTIPLIER)
+		);
+	}
+
+	function getGoldRushRottenLifetimeMs() {
+		return Math.max(1, Math.round(ROTTEN_APPLE_LIFETIME_MS * GOLD_RUSH_ROTTEN_LIFETIME_MULTIPLIER));
+	}
+
+	function getSpawnRules() {
+		if (isGoldRushActive.value) {
+			return {
+				forcedType: 'golden' as const,
+				specialAppleLifetimeMs: getGoldRushSpecialLifetimeMs(),
+				rottenLifetimeMs: getGoldRushRottenLifetimeMs(),
+				ignoreSpecialLimit: true
+			};
+		}
+
+		return {
+			forcedType: getPendingBonusChainSpawnType(bonusChain.value, apples.value),
+			specialAppleLifetimeMs: currentConfig.value.specialAppleLifetimeMs,
+			rottenLifetimeMs: ROTTEN_APPLE_LIFETIME_MS,
+			ignoreSpecialLimit: false
+		};
 	}
 
 	function setDirection(direction: Direction) {
@@ -144,14 +178,17 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 
 	function fillApplesToCap() {
 		while (apples.value.length < currentAppleCap.value) {
+			const spawnRules = getSpawnRules();
 			const newApple = spawnApple({
 				snakeBody: snakeBody.value,
 				apples: apples.value,
 				mapWidth: mapWidth.value,
 				mapHeight: mapHeight.value,
 				createId: getNextAppleId,
-				specialAppleLifetimeMs: currentConfig.value.specialAppleLifetimeMs,
-				forcedType: getPendingBonusChainSpawnType(bonusChain.value, apples.value)
+				specialAppleLifetimeMs: spawnRules.specialAppleLifetimeMs,
+				rottenLifetimeMs: spawnRules.rottenLifetimeMs,
+				forcedType: spawnRules.forcedType,
+				ignoreSpecialLimit: spawnRules.ignoreSpecialLimit
 			});
 			if (!newApple) {
 				break;
@@ -159,16 +196,18 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 			apples.value.push(newApple);
 		}
 
-		apples.value = ensureCurrentBonusChainTargetAvailable({
-			chain: bonusChain.value,
-			apples: apples.value,
-			createId: getNextAppleId,
-			specialAppleLifetimeMs: currentConfig.value.specialAppleLifetimeMs
-		});
+		if (bonusChain.value) {
+			apples.value = ensureCurrentBonusChainTargetAvailable({
+				chain: bonusChain.value,
+				apples: apples.value,
+				createId: getNextAppleId,
+				specialAppleLifetimeMs: currentConfig.value.specialAppleLifetimeMs
+			});
+		}
 	}
 
 	function startBonusChain() {
-		if (bonusChain.value || status.value !== 'playing') {
+		if (activeEventType.value || status.value !== 'playing') {
 			return;
 		}
 
@@ -187,31 +226,63 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		requestRender();
 	}
 
-	function maybeTriggerBonusChain() {
-		if (bonusChain.value || status.value !== 'playing') {
+	function startGoldRush(now = Date.now()) {
+		if (activeEventType.value || status.value !== 'playing') {
 			return;
 		}
 
-		if (shouldTriggerBonusChain()) {
+		goldRushEndsAt.value = now + GOLD_RUSH_DURATION_MS;
+		apples.value = normalizeSpawnableApples({
+			apples: apples.value,
+			type: 'golden',
+			specialAppleLifetimeMs: getGoldRushSpecialLifetimeMs(),
+			rottenLifetimeMs: getGoldRushRottenLifetimeMs(),
+			now
+		});
+		fillApplesToCap();
+		requestRender();
+	}
+
+	function maybeTriggerGameEvent() {
+		if (activeEventType.value || status.value !== 'playing') {
+			return;
+		}
+
+		if (!shouldTriggerGameEvent()) {
+			return;
+		}
+
+		const availableEvents: GameEventType[] = ['goldRush'];
+		if (apples.value.some((apple) => apple.type !== 'rotten')) {
+			availableEvents.push('bonusChain');
+		}
+
+		const nextEvent = pickRandomGameEvent(availableEvents);
+		if (nextEvent === 'bonusChain') {
 			startBonusChain();
+			return;
+		}
+
+		if (nextEvent === 'goldRush') {
+			startGoldRush();
 		}
 	}
 
-	function clearBonusChainTimer() {
-		if (bonusChainTimer.value) {
-			clearTimeout(bonusChainTimer.value);
-			bonusChainTimer.value = null;
+	function clearEventTimer() {
+		if (eventTimer.value) {
+			clearTimeout(eventTimer.value);
+			eventTimer.value = null;
 		}
 	}
 
-	function scheduleBonusChainCheck() {
-		clearBonusChainTimer();
+	function scheduleEventCheck() {
+		clearEventTimer();
 		if (status.value !== 'playing') return;
 
-		bonusChainTimer.value = window.setTimeout(() => {
-			maybeTriggerBonusChain();
-			scheduleBonusChainCheck();
-		}, getRandomBonusChainDelay());
+		eventTimer.value = window.setTimeout(() => {
+			maybeTriggerGameEvent();
+			scheduleEventCheck();
+		}, getRandomGameEventDelay());
 	}
 
 	function handleBonusChainAppleEat(eatenApple: Apple) {
@@ -253,8 +324,15 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		pointsMultiplier.value = result.pointsMultiplier;
 	}
 
-	function updateApplesForExpiry() {
-		const result = updateExpiredApples(apples.value);
+	function checkEventExpiry(now = Date.now()) {
+		if (goldRushEndsAt.value && goldRushEndsAt.value <= now) {
+			goldRushEndsAt.value = null;
+			requestRender();
+		}
+	}
+
+	function updateApplesForExpiry(now = Date.now()) {
+		const result = updateExpiredApples(apples.value, now);
 		if (!result.didChange) {
 			return;
 		}
@@ -270,8 +348,10 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 	}
 
 	function updateGame() {
+		const now = Date.now();
+		checkEventExpiry(now);
 		checkExpiredEffects();
-		updateApplesForExpiry();
+		updateApplesForExpiry(now);
 
 		snakeDirection.value = queuedDirection.value;
 		const head = snakeBody.value[0];
@@ -314,7 +394,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 			clearTimeout(gameLoop.value);
 			gameLoop.value = null;
 		}
-		clearBonusChainTimer();
+		clearEventTimer();
 	}
 
 	function initGame() {
@@ -336,6 +416,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		activeEffects.value = [];
 		apples.value = [];
 		bonusChain.value = null;
+		goldRushEndsAt.value = null;
 		nextAppleId = 0;
 		fillApplesToCap();
 		status.value = 'playing';
@@ -343,7 +424,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 
 		requestRender();
 		scheduleNextTick();
-		scheduleBonusChainCheck();
+		scheduleEventCheck();
 	}
 
 	function closeGameOver() {

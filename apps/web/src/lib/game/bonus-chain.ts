@@ -2,9 +2,6 @@ import {
 	APPLE_SPAWN_WEIGHTS,
 	BONUS_CHAIN_LENGTH,
 	BONUS_CHAIN_MAX_DUPLICATE_PER_TYPE,
-	BONUS_CHAIN_TRIGGER_CHANCE,
-	BONUS_CHAIN_TRIGGER_MAX_MS,
-	BONUS_CHAIN_TRIGGER_MIN_MS,
 	type Apple,
 	type AppleType,
 	type BonusChainState,
@@ -31,15 +28,6 @@ export interface EnsureBonusChainTargetOptions {
 	createId: () => string;
 	specialAppleLifetimeMs: number;
 	now?: number;
-}
-
-export function getRandomBonusChainDelay() {
-	const range = BONUS_CHAIN_TRIGGER_MAX_MS - BONUS_CHAIN_TRIGGER_MIN_MS;
-	return BONUS_CHAIN_TRIGGER_MIN_MS + Math.round(Math.random() * range);
-}
-
-export function shouldTriggerBonusChain() {
-	return Math.random() <= BONUS_CHAIN_TRIGGER_CHANCE;
 }
 
 export function getCurrentBonusChainTarget(chain: BonusChainState | null) {

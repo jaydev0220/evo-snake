@@ -13,6 +13,7 @@ export interface BuildAppleOptions {
 	type: AppleType;
 	position: Position;
 	specialAppleLifetimeMs: number;
+	rottenLifetimeMs?: number;
 	now?: number;
 }
 
@@ -26,7 +27,9 @@ export interface RandomEmptyCellOptions {
 export interface SpawnAppleOptions extends RandomEmptyCellOptions {
 	createId: () => string;
 	specialAppleLifetimeMs: number;
+	rottenLifetimeMs?: number;
 	forcedType?: SpawnableAppleType | null;
+	ignoreSpecialLimit?: boolean;
 }
 
 export function isSpecialAppleType(
@@ -75,9 +78,9 @@ export function getRandomEmptyCell({
 	return emptyCells[Math.floor(Math.random() * emptyCells.length)]!;
 }
 
-export function chooseSpawnType(apples: Apple[]): SpawnableAppleType {
+export function chooseSpawnType(apples: Apple[], ignoreSpecialLimit = false): SpawnableAppleType {
 	const specialAppleCount = apples.filter((apple) => isSpecialAppleType(apple.type)).length;
-	if (specialAppleCount >= MAX_SPECIAL_APPLES) {
+	if (!ignoreSpecialLimit && specialAppleCount >= MAX_SPECIAL_APPLES) {
 		return 'classic';
 	}
 
@@ -89,11 +92,12 @@ export function buildApple({
 	type,
 	position,
 	specialAppleLifetimeMs,
+	rottenLifetimeMs = ROTTEN_APPLE_LIFETIME_MS,
 	now = Date.now()
 }: BuildAppleOptions): Apple {
 	const expiresAt =
 		type === 'rotten'
-			? now + ROTTEN_APPLE_LIFETIME_MS
+			? now + rottenLifetimeMs
 			: isSpecialAppleType(type)
 				? now + specialAppleLifetimeMs
 				: null;
@@ -103,12 +107,21 @@ export function buildApple({
 		type,
 		position,
 		spawnedAt: now,
-		expiresAt
+		expiresAt,
+		rottenLifetimeMs
 	};
 }
 
-export function canSpawnForcedType(type: SpawnableAppleType, apples: Apple[]) {
+export function canSpawnForcedType(
+	type: SpawnableAppleType,
+	apples: Apple[],
+	ignoreSpecialLimit = false
+) {
 	if (!isSpecialAppleType(type)) {
+		return true;
+	}
+
+	if (ignoreSpecialLimit) {
 		return true;
 	}
 
@@ -123,7 +136,9 @@ export function spawnApple({
 	mapHeight,
 	createId,
 	specialAppleLifetimeMs,
-	forcedType
+	rottenLifetimeMs,
+	forcedType,
+	ignoreSpecialLimit = false
 }: SpawnAppleOptions): Apple | null {
 	const position = getRandomEmptyCell({ snakeBody, apples, mapWidth, mapHeight });
 	if (!position) {
@@ -131,12 +146,15 @@ export function spawnApple({
 	}
 
 	const type =
-		forcedType && canSpawnForcedType(forcedType, apples) ? forcedType : chooseSpawnType(apples);
+		forcedType && canSpawnForcedType(forcedType, apples, ignoreSpecialLimit)
+			? forcedType
+			: chooseSpawnType(apples, ignoreSpecialLimit);
 	return buildApple({
 		id: createId(),
 		type,
 		position,
-		specialAppleLifetimeMs
+		specialAppleLifetimeMs,
+		rottenLifetimeMs
 	});
 }
 
@@ -160,7 +178,7 @@ export function updateExpiredApples(apples: Apple[], now = Date.now()) {
 				...apple,
 				type: 'rotten',
 				spawnedAt: now,
-				expiresAt: now + ROTTEN_APPLE_LIFETIME_MS
+				expiresAt: now + (apple.rottenLifetimeMs ?? ROTTEN_APPLE_LIFETIME_MS)
 			});
 		}
 	}
@@ -169,4 +187,38 @@ export function updateExpiredApples(apples: Apple[], now = Date.now()) {
 		apples: nextApples,
 		didChange
 	};
+}
+
+export interface NormalizeSpawnableApplesOptions {
+	apples: Apple[];
+	type: SpawnableAppleType;
+	specialAppleLifetimeMs: number;
+	rottenLifetimeMs?: number;
+	now?: number;
+}
+
+export function normalizeSpawnableApples({
+	apples,
+	type,
+	specialAppleLifetimeMs,
+	rottenLifetimeMs,
+	now = Date.now()
+}: NormalizeSpawnableApplesOptions) {
+	return apples.map((apple) => {
+		if (apple.type === 'rotten') {
+			return apple;
+		}
+
+		return {
+			...buildApple({
+				id: apple.id,
+				type,
+				position: apple.position,
+				specialAppleLifetimeMs,
+				rottenLifetimeMs,
+				now
+			}),
+			id: apple.id
+		};
+	});
 }
