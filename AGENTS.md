@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-EvoSnake is a snake game built with Vue, Express, and SQLite. The game includes multiple fruit types, and each fruit has a unique effect on gameplay.
+EvoSnake is a snake game built with Vue, Express, and PostgreSQL. The game includes multiple fruit types, and each fruit has a unique effect on gameplay.
 
 ## Project Structure
 

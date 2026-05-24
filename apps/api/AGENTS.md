@@ -16,5 +16,5 @@ apps/api/
 
 - **Framework:** Express 5
 - **Language:** TypeScript 6
-- **Database:** Prisma 7, SQLite
+- **Database:** Prisma 7, PostgreSQL
 - **Linting:** Oxlint, Oxfmt
