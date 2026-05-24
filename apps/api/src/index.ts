@@ -68,7 +68,7 @@ async function main() {
 		await cleanupService.cleanupOldScores();
 	} catch {
 		console.warn(
-			'Skipping initial cleanup (tables may not exist yet). Run `prisma db push` to set up the database.'
+			'Skipping initial cleanup (tables may not exist yet). Run `prisma migrate deploy` to set up the database.'
 		);
 	}
 	cleanupService.scheduleWeeklyCleanup();
