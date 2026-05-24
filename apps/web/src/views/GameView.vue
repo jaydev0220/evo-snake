@@ -1,6 +1,6 @@
 <script setup lang="ts">
 	import { AppleIcon, ArrowLeft as ArrowLeftIcon } from '@lucide/vue';
-	import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+	import { computed, nextTick, onMounted, onUnmounted, ref, type CSSProperties, watch } from 'vue';
 
 	import ActiveEffectsPanel from '../components/ActiveEffectsPanel.vue';
 	import BonusChainPanel from '../components/BonusChainPanel.vue';
@@ -37,6 +37,8 @@
 		mapWidth,
 		mapHeight,
 		displayMultiplier,
+		activeEventTheme,
+		bonusChainTargetAppleIds,
 		isGhostActive,
 		isTurboActive,
 		isChillActive,
@@ -51,7 +53,7 @@
 	} = useSnakeGame(difficulty);
 	const canvasRef = ref<HTMLCanvasElement | null>(null);
 	const applePositions = ref<
-		Array<{ id: string; type: AppleType; x: number; y: number; size: number }>
+		Array<{ id: string; type: AppleType; x: number; y: number; size: number; isTarget: boolean }>
 	>([]);
 
 	const isUploading = ref(false);
@@ -60,6 +62,20 @@
 
 	const SWIPE_THRESHOLD = 10;
 	const SWIPE_MAX_AGE_MS = 500;
+	const bonusChainTargetAppleIdSet = computed(() => new Set(bonusChainTargetAppleIds.value));
+	const eventStyleVars = computed<CSSProperties | undefined>(() => {
+		if (!activeEventTheme.value) {
+			return undefined;
+		}
+
+		return {
+			'--event-accent': activeEventTheme.value.accent,
+			'--event-glow': activeEventTheme.value.glow,
+			'--event-surface': activeEventTheme.value.surface,
+			'--event-target-glow': activeEventTheme.value.targetGlow,
+			'--event-target-outline': activeEventTheme.value.targetOutline
+		} as CSSProperties;
+	});
 
 	function resizeCanvas() {
 		const canvas = canvasRef.value;
@@ -187,7 +203,8 @@
 			type: apple.type,
 			x: apple.position.x * cellPctX + cellPctX / 2,
 			y: apple.position.y * cellPctY + cellPctY / 2,
-			size: Math.min(cellPctX, cellPctY)
+			size: Math.min(cellWidth, cellHeight),
+			isTarget: bonusChainTargetAppleIdSet.value.has(apple.id)
 		}));
 	}
 
@@ -277,12 +294,37 @@
 
 					<section
 						class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakePanel border p-2.5 md:p-3.5"
+						:class="{ 'event-board-glow': !!activeEventTheme }"
+						:style="eventStyleVars"
 						aria-label="Game board container"
 					>
 						<div
 							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 relative aspect-square w-full overflow-hidden border"
+							:class="{ 'event-board-glow': !!activeEventTheme }"
+							:style="eventStyleVars"
 							aria-label="Square game area"
 						>
+							<div
+								v-if="activeEventTheme"
+								class="pointer-events-none absolute top-3 right-3 z-20 max-w-[calc(100%-1.5rem)] rounded-full border px-3 py-1.5 backdrop-blur-sm"
+								:style="{
+									...eventStyleVars,
+									borderColor: activeEventTheme.accent,
+									backgroundColor: activeEventTheme.surface,
+									boxShadow: `0 0 24px ${activeEventTheme.glow}`
+								}"
+							>
+								<div class="text-[10px] font-extrabold tracking-[0.18em] text-white/70 uppercase">
+									Event Live
+								</div>
+								<div
+									class="text-sm leading-none font-black"
+									:style="{ color: activeEventTheme.accent }"
+								>
+									{{ activeEventTheme.label }}
+								</div>
+							</div>
+
 							<canvas
 								ref="canvasRef"
 								class="block size-full touch-none"
@@ -296,11 +338,23 @@
 								class="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
 								:style="{ left: `${applePosition.x}%`, top: `${applePosition.y}%` }"
 							>
-								<AppleIcon
-									:size="Math.round(applePosition.size * 4)"
-									:color="APPLE_COLORS[applePosition.type].outline"
-									:fill="APPLE_COLORS[applePosition.type].fill"
-								/>
+								<div
+									class="relative grid place-items-center"
+									:style="{ width: `${applePosition.size}px`, height: `${applePosition.size}px` }"
+								>
+									<div
+										v-if="applePosition.isTarget && activeEventTheme"
+										class="event-target-glow absolute inset-0 rounded-[32%]"
+										:style="eventStyleVars"
+									/>
+
+									<AppleIcon
+										class="relative z-10"
+										:size="Math.max(Math.round(applePosition.size * 0.72), 14)"
+										:color="APPLE_COLORS[applePosition.type].outline"
+										:fill="APPLE_COLORS[applePosition.type].fill"
+									/>
+								</div>
 							</div>
 						</div>
 					</section>
@@ -316,6 +370,7 @@
 						v-if="bonusChain"
 						:steps="bonusChainSteps"
 						:bonus-amount="BONUS_CHAIN_COMPLETION_BONUS"
+						:theme="activeEventTheme"
 					/>
 				</div>
 			</section>

@@ -4,12 +4,14 @@ import { computed, ref, type Ref } from 'vue';
 import {
 	BONUS_CHAIN_COMPLETION_BONUS,
 	DIFFICULTIES,
+	GAME_EVENT_THEMES,
 	MAX_APPLES_BY_DIFFICULTY,
 	STARTING_SNAKE_LENGTH,
 	type ActiveEffect,
 	type Apple,
 	type BonusChainState,
 	type Direction,
+	type GameEventType,
 	type GameStatus,
 	type Position
 } from '../data';
@@ -18,6 +20,7 @@ import {
 	advanceBonusChain,
 	createBonusChain,
 	ensureCurrentBonusChainTargetAvailable,
+	getCurrentBonusChainTarget,
 	getBonusChainSteps,
 	getPendingBonusChainSpawnType,
 	getRandomBonusChainDelay,
@@ -77,6 +80,20 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		activeEffects.value.some((effect) => effect.type === 'chill')
 	);
 	const bonusChainSteps = computed(() => getBonusChainSteps(bonusChain.value));
+	const activeEventType = computed<GameEventType | null>(() =>
+		bonusChain.value ? 'bonusChain' : null
+	);
+	const activeEventTheme = computed(() =>
+		activeEventType.value ? GAME_EVENT_THEMES[activeEventType.value] : null
+	);
+	const bonusChainTargetAppleIds = computed(() => {
+		const targetType = getCurrentBonusChainTarget(bonusChain.value);
+		if (!targetType) {
+			return [];
+		}
+
+		return apples.value.filter((apple) => apple.type === targetType).map((apple) => apple.id);
+	});
 	const activeEffectsList = computed(() => getActiveEffectsList(activeEffects.value));
 
 	function requestRender() {
@@ -345,6 +362,8 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		mapWidth,
 		mapHeight,
 		displayMultiplier,
+		activeEventTheme,
+		bonusChainTargetAppleIds,
 		isGhostActive,
 		isTurboActive,
 		isChillActive,

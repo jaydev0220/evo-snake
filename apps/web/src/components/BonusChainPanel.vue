@@ -2,10 +2,11 @@
 	import { Apple as AppleIcon } from '@lucide/vue';
 
 	import { APPLE_COLORS } from '../lib/data';
-	import type { SpawnableAppleType } from '../lib/data';
+	import type { GameEventTheme, SpawnableAppleType } from '../lib/data';
 
 	defineProps<{
 		bonusAmount: number;
+		theme?: GameEventTheme | null;
 		steps: Array<{
 			type: SpawnableAppleType;
 			index: number;
@@ -19,6 +20,14 @@
 	<section
 		class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakeCard grid gap-3 border p-3.5 md:p-4.5"
 		aria-label="Bonus chain"
+		:style="
+			theme
+				? {
+						borderColor: theme.accent,
+						boxShadow: `0 0 28px ${theme.glow}`
+					}
+				: undefined
+		"
 	>
 		<div class="flex items-start justify-between gap-3">
 			<div>
@@ -29,7 +38,12 @@
 					Eat apples in this order. One wrong bite cancels the event.
 				</p>
 			</div>
-			<div class="text-evosnake-primary text-right text-sm font-black">+{{ bonusAmount }}</div>
+			<div
+				class="text-right text-sm font-black"
+				:style="{ color: theme?.accent ?? undefined }"
+			>
+				+{{ bonusAmount }}
+			</div>
 		</div>
 
 		<div class="grid grid-cols-2 gap-2">
@@ -39,10 +53,19 @@
 				class="rounded-evosnake border px-2 py-3 text-center transition-colors"
 				:class="
 					step.isCurrent
-						? 'border-evosnake-primary bg-evosnake-primary/10'
+						? ''
 						: step.isCompleted
 							? 'border-evosnake-border bg-evosnake-surface2 opacity-45'
 							: 'border-evosnake-border bg-evosnake-surface2'
+				"
+				:style="
+					step.isCurrent && theme
+						? {
+								borderColor: theme.accent,
+								backgroundColor: theme.surface,
+								boxShadow: `0 0 18px ${theme.targetGlow}`
+							}
+						: undefined
 				"
 			>
 				<div class="text-evosnake-muted mb-2 text-[10px] font-black tracking-[0.2em] uppercase">

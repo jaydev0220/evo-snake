@@ -39,6 +39,17 @@ export interface BonusChainState {
 	startedAt: number;
 }
 
+export type GameEventType = 'bonusChain';
+
+export interface GameEventTheme {
+	label: string;
+	accent: string;
+	glow: string;
+	surface: string;
+	targetGlow: string;
+	targetOutline: string;
+}
+
 export const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
 	easy: { label: 'Easy', mapWidth: 24, mapHeight: 24, tickMs: 200, specialAppleLifetimeMs: 9000 },
 	normal: {
@@ -85,6 +96,17 @@ export const BONUS_CHAIN_LENGTH = 4;
 export const BONUS_CHAIN_TRIGGER_MIN_MS = 15_000;
 export const BONUS_CHAIN_TRIGGER_MAX_MS = 20_000;
 export const BONUS_CHAIN_TRIGGER_CHANCE = 0.05;
+
+export const GAME_EVENT_THEMES: Record<GameEventType, GameEventTheme> = {
+	bonusChain: {
+		label: 'Bonus Chain',
+		accent: '#F5C84C',
+		glow: 'rgba(245, 200, 76, 0.46)',
+		surface: 'rgba(245, 200, 76, 0.14)',
+		targetGlow: 'rgba(245, 200, 76, 0.34)',
+		targetOutline: 'rgba(255, 241, 176, 0.94)'
+	}
+};
 
 export const BASE_POINTS = 20;
 export const BONUS_CHAIN_COMPLETION_BONUS = BASE_POINTS * BONUS_CHAIN_LENGTH;
