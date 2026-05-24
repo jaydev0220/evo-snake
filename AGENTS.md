@@ -2,7 +2,9 @@
 
 ## Project Overview
 
-EvoSnake is a snake game built with Vue, Express, and PostgreSQL. The game includes multiple fruit types, and each fruit has a unique effect on gameplay.
+EvoSnake is a monorepo for a browser-based snake game and its backend services. The web app is built with Vue 3 and Vite, the API is built with Express, and persistent leaderboard data is stored through Prisma with PostgreSQL.
+
+The game currently includes multiple apple behaviors and live event systems, including Bonus Chain, Gold Rush, and Ice Age. Shared runtime types and difficulty definitions live in the workspace package under `packages/types`.
 
 ## Project Structure
 
@@ -15,8 +17,8 @@ project-root/
 |   |-- api/    # Express API server
 |   `-- web/    # Vue web game
 `-- packages/
-    |-- configs/  # Tool configs
-    `-- share/    # Shared types/utilities used by api and web
+    |-- configs/  # Shared lint, TypeScript, and tooling config
+    `-- types/    # Shared types used by api and web
 ```
 
 ## Operation Rules
