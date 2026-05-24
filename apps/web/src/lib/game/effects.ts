@@ -51,8 +51,8 @@ export function getDisplayMultiplier(pointsMultiplier: number, activeEffects: Ac
 	const turbo = activeEffects.find((effect) => effect.type === 'turbo');
 	const chill = activeEffects.find((effect) => effect.type === 'chill');
 	let multiplier = pointsMultiplier;
-	if (turbo) multiplier += 0.5;
-	if (chill) multiplier -= 0.25;
+	if (turbo) multiplier += TURBO_POINTS_DELTA;
+	if (chill) multiplier += CHILL_POINTS_DELTA;
 	return clamp(multiplier, MIN_POINTS_MULTIPLIER, MAX_POINTS_MULTIPLIER);
 }
 
@@ -77,28 +77,9 @@ export function clearExpiredEffects(
 	pointsMultiplier: number,
 	now = Date.now()
 ) {
-	let nextPointsMultiplier = pointsMultiplier;
-	const expired = activeEffects.filter((effect) => effect.expiresAt <= now);
-
-	for (const effect of expired) {
-		if (effect.type === 'turbo') {
-			nextPointsMultiplier = clamp(
-				nextPointsMultiplier - TURBO_POINTS_DELTA,
-				MIN_POINTS_MULTIPLIER,
-				MAX_POINTS_MULTIPLIER
-			);
-		} else if (effect.type === 'chill') {
-			nextPointsMultiplier = clamp(
-				nextPointsMultiplier - CHILL_POINTS_DELTA,
-				MIN_POINTS_MULTIPLIER,
-				MAX_POINTS_MULTIPLIER
-			);
-		}
-	}
-
 	return {
 		activeEffects: activeEffects.filter((effect) => effect.expiresAt > now),
-		pointsMultiplier: nextPointsMultiplier
+		pointsMultiplier
 	};
 }
 
@@ -115,7 +96,7 @@ export function applyAppleEffect({
 	let nextScore = score;
 	let nextTargetLength = targetLength;
 	let nextSnakeBody = snakeBody;
-	let nextPointsMultiplier = pointsMultiplier;
+	const nextPointsMultiplier = pointsMultiplier;
 	let nextActiveEffects = activeEffects;
 
 	switch (apple.type) {
@@ -131,21 +112,11 @@ export function applyAppleEffect({
 			nextScore += Math.round(BASE_POINTS * displayMultiplier);
 			nextTargetLength += CLASSIC_LENGTH_DELTA;
 			nextActiveEffects = replaceSpeedEffect(nextActiveEffects, 'turbo', TURBO_DURATION_MS, now);
-			nextPointsMultiplier = clamp(
-				nextPointsMultiplier + TURBO_POINTS_DELTA,
-				MIN_POINTS_MULTIPLIER,
-				MAX_POINTS_MULTIPLIER
-			);
 			break;
 		case 'chill':
 			nextScore += Math.round(BASE_POINTS * displayMultiplier);
 			nextTargetLength += CLASSIC_LENGTH_DELTA;
 			nextActiveEffects = replaceSpeedEffect(nextActiveEffects, 'chill', CHILL_DURATION_MS, now);
-			nextPointsMultiplier = clamp(
-				nextPointsMultiplier + CHILL_POINTS_DELTA,
-				MIN_POINTS_MULTIPLIER,
-				MAX_POINTS_MULTIPLIER
-			);
 			break;
 		case 'ghost':
 			nextScore += Math.round(BASE_POINTS * displayMultiplier);
