@@ -31,7 +31,7 @@ function getStoredPlayerId(): string {
 
 export const useGameStore = defineStore('game', () => {
 	const playerName = ref('');
-	const selectedDifficulty = ref<Difficulty>('easy');
+	const selectedDifficulty = ref<Difficulty>('normal');
 	const playerId = ref(getStoredPlayerId());
 
 	const leaderboard = ref<LeaderboardEntry[]>([]);
