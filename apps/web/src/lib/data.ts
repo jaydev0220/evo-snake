@@ -111,11 +111,11 @@ export const ICE_AGE_DURATION_MS = 12_000;
 export const GAME_EVENT_THEMES: Record<GameEventType, GameEventTheme> = {
 	bonusChain: {
 		label: 'Bonus Chain',
-		accent: '#38BDF8',
-		glow: 'rgba(56, 189, 248, 0.48)',
-		surface: 'rgba(56, 189, 248, 0.14)',
-		targetGlow: 'rgba(56, 189, 248, 0.32)',
-		targetOutline: 'rgba(186, 230, 253, 0.96)'
+		accent: '#F472B6',
+		glow: 'rgba(244, 114, 182, 0.46)',
+		surface: 'rgba(244, 114, 182, 0.16)',
+		targetGlow: 'rgba(244, 114, 182, 0.3)',
+		targetOutline: 'rgba(253, 164, 175, 0.96)'
 	},
 	goldRush: {
 		label: 'Gold Rush',
