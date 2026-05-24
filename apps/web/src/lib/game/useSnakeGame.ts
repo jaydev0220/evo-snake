@@ -2,6 +2,7 @@ import type { Difficulty } from '@packages/types';
 import { computed, ref, type Ref } from 'vue';
 
 import {
+	APPLE_SPAWN_WEIGHTS,
 	BONUS_CHAIN_COMPLETION_BONUS,
 	DIFFICULTIES,
 	GAME_EVENT_THEMES,
@@ -18,7 +19,8 @@ import {
 	type Direction,
 	type GameEventType,
 	type GameStatus,
-	type Position
+	type Position,
+	type SpawnableAppleType
 } from '../data';
 import { normalizeSpawnableApples, removeApple, spawnApple, updateExpiredApples } from './apples';
 import {
@@ -66,6 +68,9 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 	const renderVersion = ref(0);
 
 	let nextAppleId = 0;
+	const iceAgeSpawnPool = (Object.keys(APPLE_SPAWN_WEIGHTS) as SpawnableAppleType[]).filter(
+		(type) => type !== 'turbo'
+	);
 
 	const currentConfig = computed(() => DIFFICULTIES[difficulty.value]);
 	const currentAppleCap = computed(() => MAX_APPLES_BY_DIFFICULTY[difficulty.value]);
@@ -137,7 +142,18 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 				forcedType: 'golden' as const,
 				specialAppleLifetimeMs: getGoldRushSpecialLifetimeMs(),
 				rottenLifetimeMs: getGoldRushRottenLifetimeMs(),
-				ignoreSpecialLimit: true
+				ignoreSpecialLimit: true,
+				pool: undefined
+			};
+		}
+
+		if (isIceAgeActive.value) {
+			return {
+				forcedType: getPendingBonusChainSpawnType(bonusChain.value, apples.value),
+				specialAppleLifetimeMs: currentConfig.value.specialAppleLifetimeMs,
+				rottenLifetimeMs: ROTTEN_APPLE_LIFETIME_MS,
+				ignoreSpecialLimit: false,
+				pool: iceAgeSpawnPool
 			};
 		}
 
@@ -145,7 +161,8 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 			forcedType: getPendingBonusChainSpawnType(bonusChain.value, apples.value),
 			specialAppleLifetimeMs: currentConfig.value.specialAppleLifetimeMs,
 			rottenLifetimeMs: ROTTEN_APPLE_LIFETIME_MS,
-			ignoreSpecialLimit: false
+			ignoreSpecialLimit: false,
+			pool: undefined
 		};
 	}
 
@@ -198,7 +215,8 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 				specialAppleLifetimeMs: spawnRules.specialAppleLifetimeMs,
 				rottenLifetimeMs: spawnRules.rottenLifetimeMs,
 				forcedType: spawnRules.forcedType,
-				ignoreSpecialLimit: spawnRules.ignoreSpecialLimit
+				ignoreSpecialLimit: spawnRules.ignoreSpecialLimit,
+				pool: spawnRules.pool
 			});
 			if (!newApple) {
 				break;
@@ -260,6 +278,14 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 
 		iceAgeEndsAt.value = now + ICE_AGE_DURATION_MS;
 		activeEffects.value = applySpeedEffect(activeEffects.value, 'chill', ICE_AGE_DURATION_MS, now);
+		apples.value = apples.value.map((apple) =>
+			apple.type === 'turbo'
+				? {
+						...apple,
+						type: 'chill'
+					}
+				: apple
+		);
 		requestRender();
 	}
 

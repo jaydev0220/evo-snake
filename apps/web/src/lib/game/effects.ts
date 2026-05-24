@@ -1,6 +1,5 @@
 import {
 	BASE_POINTS,
-	CHILL_APPLE_POINTS,
 	CHILL_DURATION_MS,
 	CHILL_POINTS_DELTA,
 	CHILL_SPEED_MULTIPLIER,
@@ -114,22 +113,18 @@ export function applyAppleEffect({
 			nextSnakeBody = nextSnakeBody.slice(0, nextTargetLength);
 			break;
 		case 'turbo':
-			nextScore += Math.round(BASE_POINTS * displayMultiplier);
 			nextTargetLength += CLASSIC_LENGTH_DELTA;
 			nextActiveEffects = replaceSpeedEffect(nextActiveEffects, 'turbo', TURBO_DURATION_MS, now);
 			break;
 		case 'chill':
 			nextTargetLength += CLASSIC_LENGTH_DELTA;
 			if (iceAgeActive) {
-				nextScore += CHILL_APPLE_POINTS;
 				extraForwardSteps = 1;
 			} else {
-				nextScore += Math.round(BASE_POINTS * displayMultiplier);
 				nextActiveEffects = replaceSpeedEffect(nextActiveEffects, 'chill', CHILL_DURATION_MS, now);
 			}
 			break;
 		case 'ghost':
-			nextScore += Math.round(BASE_POINTS * displayMultiplier);
 			nextTargetLength += CLASSIC_LENGTH_DELTA;
 			nextActiveEffects = refreshGhostEffect(nextActiveEffects, GHOST_DURATION_MS, now);
 			break;

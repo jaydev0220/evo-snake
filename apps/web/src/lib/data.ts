@@ -137,7 +137,6 @@ export const GAME_EVENT_THEMES: Record<GameEventType, GameEventTheme> = {
 
 export const BASE_POINTS = 20;
 export const BONUS_CHAIN_COMPLETION_BONUS = BASE_POINTS * BONUS_CHAIN_LENGTH;
-export const CHILL_APPLE_POINTS = BASE_POINTS * 2;
 export const MIN_SNAKE_LENGTH = 3;
 export const STARTING_SNAKE_LENGTH = 3;
 export const MIN_POINTS_MULTIPLIER = 0.25;
@@ -181,18 +180,19 @@ export const FRUIT_GUIDE: FruitGuideItem[] = [
 	{
 		id: 'turbo',
 		name: 'Turbo Apple',
-		effect: "Temporarily increases the snake's speed and raises the points multiplier."
+		effect:
+			"Temporarily increases the snake's speed and raises the points multiplier without giving points."
 	},
 	{
 		id: 'chill',
 		name: 'Chill Apple',
 		effect:
-			'Temporarily slows the snake down. During Ice Age, it instead grants double base points and a forward slip.'
+			'Temporarily slows the snake down. During Ice Age, it instead makes the snake slip forward one extra tile.'
 	},
 	{
 		id: 'ghost',
 		name: 'Ghost Apple',
-		effect: 'Temporarily lets the snake pass through its own body.'
+		effect: 'Temporarily lets the snake pass through its own body without giving points.'
 	},
 	{
 		id: 'golden',

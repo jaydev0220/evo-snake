@@ -30,6 +30,7 @@ export interface SpawnAppleOptions extends RandomEmptyCellOptions {
 	rottenLifetimeMs?: number;
 	forcedType?: SpawnableAppleType | null;
 	ignoreSpecialLimit?: boolean;
+	pool?: SpawnableAppleType[];
 }
 
 export function isSpecialAppleType(
@@ -78,13 +79,17 @@ export function getRandomEmptyCell({
 	return emptyCells[Math.floor(Math.random() * emptyCells.length)]!;
 }
 
-export function chooseSpawnType(apples: Apple[], ignoreSpecialLimit = false): SpawnableAppleType {
+export function chooseSpawnType(
+	apples: Apple[],
+	ignoreSpecialLimit = false,
+	pool: SpawnableAppleType[] = Object.keys(APPLE_SPAWN_WEIGHTS) as SpawnableAppleType[]
+): SpawnableAppleType {
 	const specialAppleCount = apples.filter((apple) => isSpecialAppleType(apple.type)).length;
 	if (!ignoreSpecialLimit && specialAppleCount >= MAX_SPECIAL_APPLES) {
 		return 'classic';
 	}
 
-	return getRandomWeightedType();
+	return getRandomWeightedType(pool);
 }
 
 export function buildApple({
@@ -138,7 +143,8 @@ export function spawnApple({
 	specialAppleLifetimeMs,
 	rottenLifetimeMs,
 	forcedType,
-	ignoreSpecialLimit = false
+	ignoreSpecialLimit = false,
+	pool
 }: SpawnAppleOptions): Apple | null {
 	const position = getRandomEmptyCell({ snakeBody, apples, mapWidth, mapHeight });
 	if (!position) {
@@ -148,7 +154,7 @@ export function spawnApple({
 	const type =
 		forcedType && canSpawnForcedType(forcedType, apples, ignoreSpecialLimit)
 			? forcedType
-			: chooseSpawnType(apples, ignoreSpecialLimit);
+			: chooseSpawnType(apples, ignoreSpecialLimit, pool);
 	return buildApple({
 		id: createId(),
 		type,
