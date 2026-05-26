@@ -47,6 +47,7 @@ catalogs:
     tailwindcss: ^4.3.0
     '@tailwindcss/vite': ^4.3.0
     pinia: ^3.0.4
+    vue-i18n: ^11.4.4
 
 allowBuilds:
   '@prisma/engines': true

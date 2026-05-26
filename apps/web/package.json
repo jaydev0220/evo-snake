@@ -16,7 +16,8 @@
 	},
 	"dependencies": {
 		"pinia": "catalog:web",
-		"vue": "catalog:web"
+		"vue": "catalog:web",
+		"vue-i18n": "catalog:web"
 	},
 	"devDependencies": {
 		"@lucide/vue": "catalog:api",
