@@ -1,6 +1,7 @@
 <script setup lang="ts">
 	import { X } from '@lucide/vue';
 	import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+	import { useI18n } from 'vue-i18n';
 
 	import { FRUIT_GUIDE } from '../lib/data';
 	import { CONTROL_GUIDE_CARDS, EVENT_GUIDE_ITEMS, type GuideTab } from '../lib/how-to-play';
@@ -9,15 +10,28 @@
 	import HowToPlayEventsTab from './HowToPlayEventsTab.vue';
 
 	const isOpen = defineModel<boolean>({ required: true });
+	const { t } = useI18n({ useScope: 'global' });
 
 	const activeTab = ref<GuideTab>('controls');
 	const modalRef = ref<HTMLElement | null>(null);
 	let triggerElement: HTMLElement | null = null;
 
 	const tabs = computed(() => [
-		{ id: 'controls' as const, label: 'Controls', detail: `${CONTROL_GUIDE_CARDS.length} methods` },
-		{ id: 'apples' as const, label: 'Apples', detail: `${FRUIT_GUIDE.length} types` },
-		{ id: 'events' as const, label: 'Events', detail: `${EVENT_GUIDE_ITEMS.length} events` }
+		{
+			id: 'controls' as const,
+			label: t('howToPlay.controls'),
+			detail: t('howToPlay.methodsCount', { count: CONTROL_GUIDE_CARDS.length })
+		},
+		{
+			id: 'apples' as const,
+			label: t('howToPlay.apples'),
+			detail: t('howToPlay.typesCount', { count: FRUIT_GUIDE.length })
+		},
+		{
+			id: 'events' as const,
+			label: t('howToPlay.events'),
+			detail: t('howToPlay.eventsCount', { count: EVENT_GUIDE_ITEMS.length })
+		}
 	]);
 
 	function close() {
@@ -128,16 +142,16 @@
 							id="play-guide-title"
 							class="text-evosnake-text text-2xl leading-none font-extrabold tracking-[-0.04em]"
 						>
-							How to Play
+							{{ t('howToPlay.title') }}
 						</h2>
 						<p class="text-evosnake-muted mt-1.5 hidden text-sm leading-snug md:block">
-							Learn the controls, apple effects, and live events before your next run.
+							{{ t('howToPlay.subtitle') }}
 						</p>
 					</div>
 
 					<button
 						type="button"
-						aria-label="Close play guide"
+						:aria-label="t('howToPlay.close')"
 						class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary grid size-10 place-items-center border"
 						@click="close"
 					>
@@ -150,7 +164,7 @@
 
 				<nav
 					class="border-evosnake-border grid grid-cols-3 gap-1.5 border-b p-2.5 md:gap-2 md:px-4"
-					aria-label="Play guide sections"
+					:aria-label="t('howToPlay.sections')"
 					role="tablist"
 				>
 					<button

@@ -58,8 +58,8 @@ export const useGameStore = defineStore('game', () => {
 			const res = await fetchLeaderboard(selectedDifficulty.value);
 			leaderboard.value = res.data;
 			await loadMyRank();
-		} catch (e) {
-			error.value = e instanceof Error ? e.message : 'Failed to load leaderboard';
+		} catch {
+			error.value = 'errors.loadLeaderboardFailed';
 		} finally {
 			isLoading.value = false;
 		}
@@ -77,8 +77,8 @@ export const useGameStore = defineStore('game', () => {
 	async function postScore(score: number, difficulty: Difficulty) {
 		const trimmedName = playerName.value.trim();
 		if (!trimmedName) {
-			error.value = 'Player name is required';
-			return;
+			error.value = 'errors.playerNameRequired';
+			return false;
 		}
 
 		try {
@@ -88,9 +88,12 @@ export const useGameStore = defineStore('game', () => {
 				score,
 				difficulty
 			});
+			error.value = null;
 			await loadLeaderboard();
-		} catch (e) {
-			error.value = e instanceof Error ? e.message : 'Failed to submit score';
+			return true;
+		} catch {
+			error.value = 'errors.submitScoreFailed';
+			return false;
 		}
 	}
 

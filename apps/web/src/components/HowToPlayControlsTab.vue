@@ -1,15 +1,18 @@
 <script setup lang="ts">
 	import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from '@lucide/vue';
+	import { useI18n } from 'vue-i18n';
 
 	import { CONTROL_GUIDE_CARDS } from '../lib/how-to-play';
 	import HowToPlayPanelHeader from './HowToPlayPanelHeader.vue';
+
+	const { t } = useI18n({ useScope: 'global' });
 </script>
 
 <template>
 	<section>
 		<HowToPlayPanelHeader
-			title="Controls"
-			:detail="`${CONTROL_GUIDE_CARDS.length} methods`"
+			:title="t('howToPlay.controls')"
+			:detail="t('howToPlay.methodsCount', { count: CONTROL_GUIDE_CARDS.length })"
 		/>
 
 		<div class="grid grid-cols-1 gap-2.5 md:grid-cols-3">
@@ -18,12 +21,14 @@
 				:key="control.id"
 				class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid min-h-40 place-items-center gap-3 border p-4 text-center"
 			>
-				<div class="text-evosnake-text font-extrabold tracking-tight">{{ control.label }}</div>
+				<div class="text-evosnake-text font-extrabold tracking-tight">
+					{{ t(`controls.${control.id}`) }}
+				</div>
 
 				<div
 					v-if="control.type === 'keys'"
 					class="grid justify-center gap-1.5"
-					:aria-label="control.ariaLabel"
+					:aria-label="t(`controls.${control.id}Aria`)"
 				>
 					<div class="flex justify-center gap-1.5">
 						<kbd
@@ -84,7 +89,7 @@
 				>
 					<div class="flex items-center gap-2">
 						<span class="bg-evosnake-primary size-2 animate-pulse rounded-full opacity-70" />
-						<span>Swipe</span>
+						<span>{{ t('controls.swipe') }}</span>
 						<span
 							class="bg-evosnake-primary size-2 animate-pulse rounded-full opacity-70 [animation-delay:180ms]"
 						/>

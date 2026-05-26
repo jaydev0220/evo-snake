@@ -1,20 +1,21 @@
 <!doctype html>
-<html lang="zh_TW">
+<html lang="zh-TW">
 	<head>
 		<meta charset="UTF-8" />
 		<meta
 			name="viewport"
 			content="width=device-width, initial-scale=1.0, viewport-fit=cover"
 		/>
-		<title>EvoSnake | Browser Snake Game</title>
+		<title>EvoSnake | 貪吃蛇遊戲</title>
 		<meta
 			name="description"
-			content="Play EvoSnake, a free browser snake game with special apples, live events, difficulty modes, and leaderboard competition straight from your web browser."
+			content="遊玩 EvoSnake，一款免費的瀏覽器貪吃蛇遊戲，結合特殊蘋果、即時事件、難度模式與排行榜競賽。"
 		/>
 		<meta
 			name="keywords"
-			content="snake game, browser snake game, web game, arcade game, leaderboard game, bonus chain, gold rush, ice age"
+			content="貪吃蛇遊戲, 瀏覽器遊戲, 街機遊戲, 排行榜遊戲, 即時事件, 連鎖獎勵, 黃金熱潮, 冰河時期"
 		/>
+		<meta name="language" content="zh-TW" />
 		<meta
 			name="robots"
 			content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
@@ -39,10 +40,11 @@
 		<meta property="og:site_name" content="EvoSnake" />
 		<meta property="og:type" content="website" />
 		<meta property="og:locale" content="zh_TW" />
-		<meta property="og:title" content="EvoSnake | Browser Snake Game" />
+		<meta property="og:locale:alternate" content="en_US" />
+		<meta property="og:title" content="EvoSnake | 貪吃蛇遊戲" />
 		<meta
 			property="og:description"
-			content="Play EvoSnake, a free browser snake game with special apples, live events, difficulty modes, and leaderboard competition straight from your web browser."
+			content="遊玩 EvoSnake，一款免費的瀏覽器貪吃蛇遊戲，結合特殊蘋果、即時事件、難度模式與排行榜競賽。"
 		/>
 		<meta property="og:url" content="/" />
 		<meta property="og:image" content="/og-image.webp" />
@@ -51,18 +53,18 @@
 		<meta property="og:image:height" content="630" />
 		<meta
 			property="og:image:alt"
-			content="EvoSnake preview artwork showing a snake board, apples, and event callouts"
+			content="EvoSnake 預覽圖，顯示蛇棋盤、蘋果與事件提示。"
 		/>
 		<meta name="twitter:card" content="summary_large_image" />
-		<meta name="twitter:title" content="EvoSnake | Browser Snake Game" />
+		<meta name="twitter:title" content="EvoSnake | 貪吃蛇遊戲" />
 		<meta
 			name="twitter:description"
-			content="Play EvoSnake, a free browser snake game with special apples, live events, difficulty modes, and leaderboard competition straight from your web browser."
+			content="遊玩 EvoSnake，一款免費的瀏覽器貪吃蛇遊戲，結合特殊蘋果、即時事件、難度模式與排行榜競賽。"
 		/>
-		<meta name="twitter:image" content="/og-image.svg" />
+		<meta name="twitter:image" content="/og-image.webp" />
 		<meta
 			name="twitter:image:alt"
-			content="EvoSnake preview artwork showing a snake board, apples, and event callouts"
+			content="EvoSnake 預覽圖，顯示蛇棋盤、蘋果與事件提示。"
 		/>
 		<script
 			id="structured-data"
@@ -76,8 +78,9 @@
 						"@id": "/#website",
 						"name": "EvoSnake",
 						"url": "/",
-						"description": "Play EvoSnake, a free browser snake game with special apples, live events, difficulty modes, and leaderboard competition straight from your web browser.",
-						"inLanguage": "zh_TW",
+						"description": "遊玩 EvoSnake，一款免費的瀏覽器貪吃蛇遊戲，結合特殊蘋果、即時事件、難度模式與排行榜競賽。",
+						"inLanguage": "zh-TW",
+						"availableLanguage": ["zh-TW", "en"],
 						"mainEntity": {
 							"@id": "/#game"
 						}
@@ -87,18 +90,25 @@
 						"@id": "/#game",
 						"name": "EvoSnake",
 						"url": "/",
-						"description": "Play EvoSnake, a free browser snake game with special apples, live events, difficulty modes, and leaderboard competition straight from your web browser.",
-						"image": ["/og-image.svg"],
-						"inLanguage": "en",
+						"description": "遊玩 EvoSnake，一款免費的瀏覽器貪吃蛇遊戲，結合特殊蘋果、即時事件、難度模式與排行榜競賽。",
+						"image": ["/og-image.webp"],
+						"inLanguage": "zh-TW",
+						"availableLanguage": ["zh-TW", "en"],
 						"gamePlatform": ["Web Browser"],
 						"playMode": "SinglePlayer",
 						"genre": ["Arcade", "Snake"],
 						"isAccessibleForFree": true,
 						"operatingSystem": "Any",
-						"keywords": "snake game, browser snake game, web game, arcade game, leaderboard game, bonus chain, gold rush, ice age",
+						"keywords": "貪吃蛇遊戲, 瀏覽器遊戲, 街機遊戲, 排行榜遊戲, 即時事件, 連鎖獎勵, 黃金熱潮, 冰河時期",
 						"potentialAction": {
 							"@type": "PlayAction",
 							"target": "/"
+						},
+						"offers": {
+							"@type": "Offer",
+							"price": "0",
+							"priceCurrency": "USD",
+							"availability": "https://schema.org/InStock"
 						},
 						"mainEntityOfPage": "/"
 					}

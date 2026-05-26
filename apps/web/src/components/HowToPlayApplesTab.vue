@@ -1,15 +1,18 @@
 <script setup lang="ts">
 	import { Apple } from '@lucide/vue';
+	import { useI18n } from 'vue-i18n';
 
 	import { APPLE_COLORS, FRUIT_GUIDE } from '../lib/data';
 	import HowToPlayPanelHeader from './HowToPlayPanelHeader.vue';
+
+	const { t } = useI18n({ useScope: 'global' });
 </script>
 
 <template>
 	<section>
 		<HowToPlayPanelHeader
-			title="Apples"
-			:detail="`${FRUIT_GUIDE.length} types`"
+			:title="t('howToPlay.apples')"
+			:detail="t('howToPlay.typesCount', { count: FRUIT_GUIDE.length })"
 		/>
 
 		<div class="grid grid-cols-1 gap-2.5 md:grid-cols-2">
@@ -29,8 +32,12 @@
 				</div>
 
 				<div class="min-w-0">
-					<div class="text-evosnake-text font-extrabold">{{ fruit.name }}</div>
-					<p class="text-evosnake-muted mt-1 text-sm leading-6">{{ fruit.effect }}</p>
+					<div class="text-evosnake-text font-extrabold">
+						{{ t(`apples.types.${fruit.id}.name`) }}
+					</div>
+					<p class="text-evosnake-muted mt-1 text-sm leading-6">
+						{{ t(`apples.types.${fruit.id}.effect`) }}
+					</p>
 				</div>
 			</article>
 		</div>

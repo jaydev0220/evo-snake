@@ -1,21 +1,27 @@
 <script setup lang="ts">
 	import type { Difficulty } from '@packages/types';
+	import { computed } from 'vue';
+	import { useI18n } from 'vue-i18n';
 
 	const modelValue = defineModel<Difficulty>({ required: true });
 
-	const options: { value: Difficulty; label: string }[] = [
-		{ value: 'easy', label: 'Easy' },
-		{ value: 'normal', label: 'Normal' },
-		{ value: 'hard', label: 'Hard' },
-		{ value: 'asian', label: 'Asian' }
-	];
+	const { t } = useI18n({ useScope: 'global' });
+
+	const options = computed(
+		(): Array<{ value: Difficulty; label: string }> => [
+			{ value: 'easy', label: t('difficulty.easy') },
+			{ value: 'normal', label: t('difficulty.normal') },
+			{ value: 'hard', label: t('difficulty.hard') },
+			{ value: 'asian', label: t('difficulty.asian') }
+		]
+	);
 </script>
 
 <template>
 	<div
 		class="grid grid-cols-2 gap-2.5 md:grid-cols-4"
 		role="radiogroup"
-		aria-label="Difficulty selector"
+		:aria-label="t('difficulty.label')"
 	>
 		<label
 			v-for="opt in options"

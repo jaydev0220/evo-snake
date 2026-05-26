@@ -1,6 +1,7 @@
 <script setup lang="ts">
 	import { Play, Bug, BookOpen } from '@lucide/vue';
 	import { ref, onMounted } from 'vue';
+	import { useI18n } from 'vue-i18n';
 
 	import DifficultySelector from '../components/DifficultySelector.vue';
 	import HowToPlayModal from '../components/HowToPlayModal.vue';
@@ -9,6 +10,7 @@
 
 	const store = useGameStore();
 	const showHowToPlay = ref(false);
+	const { t } = useI18n({ useScope: 'global' });
 
 	const emit = defineEmits<{
 		start: [];
@@ -21,7 +23,6 @@
 	function handlePlay() {
 		if (!store.playerName.trim()) return;
 		store.setPlayerName(store.playerName);
-		store.loadLeaderboard();
 		emit('start');
 	}
 
@@ -36,7 +37,7 @@
 	>
 		<section
 			class="grid w-full max-w-240 gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_340px]"
-			aria-label="EvoSnake main menu"
+			:aria-label="t('menu.ariaLabel')"
 		>
 			<div
 				class="bg-evosnake-surface border-evosnake-border rounded-evosnakePanel shadow-evosnakePanel grid content-center gap-7 border p-5 md:p-8 lg:min-h-130"
@@ -56,7 +57,7 @@
 				<div class="grid gap-7">
 					<label class="grid gap-2">
 						<span class="text-evosnake-muted text-xs font-bold tracking-wide uppercase">
-							Player name
+							{{ t('menu.playerName') }}
 						</span>
 						<input
 							v-model="store.playerName"
@@ -80,7 +81,7 @@
 									class="h-4 w-4"
 									aria-hidden="true"
 								/>
-								<span>Play</span>
+								<span>{{ t('menu.play') }}</span>
 							</span>
 						</button>
 
@@ -94,7 +95,7 @@
 									class="h-4 w-4"
 									aria-hidden="true"
 								/>
-								<span>How to Play</span>
+								<span>{{ t('menu.howToPlay') }}</span>
 							</span>
 						</button>
 
@@ -108,7 +109,7 @@
 									class="h-4 w-4"
 									aria-hidden="true"
 								/>
-								<span>Report Bug</span>
+								<span>{{ t('menu.reportBug') }}</span>
 							</span>
 						</button>
 					</div>

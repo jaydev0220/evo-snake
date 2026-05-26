@@ -1,9 +1,12 @@
 <script setup lang="ts">
 	import { Apple, Snowflake, Zap } from '@lucide/vue';
+	import { useI18n } from 'vue-i18n';
 
 	import { BONUS_CHAIN_LENGTH, GAME_EVENT_THEMES } from '../lib/data';
 	import { EVENT_GUIDE_ITEMS, type EventGuideItem } from '../lib/how-to-play';
 	import HowToPlayPanelHeader from './HowToPlayPanelHeader.vue';
+
+	const { t } = useI18n({ useScope: 'global' });
 
 	function getPreviewSurface(eventId: EventGuideItem['id']) {
 		const theme = GAME_EVENT_THEMES[eventId];
@@ -52,8 +55,8 @@
 <template>
 	<section>
 		<HowToPlayPanelHeader
-			title="Events"
-			:detail="`${EVENT_GUIDE_ITEMS.length} events`"
+			:title="t('howToPlay.events')"
+			:detail="t('howToPlay.eventsCount', { count: EVENT_GUIDE_ITEMS.length })"
 		/>
 
 		<div class="grid gap-2.5">
@@ -67,10 +70,10 @@
 						class="font-extrabold"
 						:style="getPreviewLabelStyle(event.id)"
 					>
-						{{ GAME_EVENT_THEMES[event.id].label }}
+						{{ t(`events.${event.id}.name`) }}
 					</div>
 					<p class="text-evosnake-muted mt-1 text-sm leading-6">
-						{{ event.description }}
+						{{ t(`events.${event.id}.description`) }}
 					</p>
 				</div>
 
@@ -95,7 +98,7 @@
 						class="absolute top-2.5 left-2.5 rounded-full border px-2 py-1 text-[10px] font-black tracking-[0.12em] uppercase"
 						:style="getPreviewChip(event.id)"
 					>
-						{{ GAME_EVENT_THEMES[event.id].label }}
+						{{ t(`events.${event.id}.name`) }}
 					</div>
 
 					<div

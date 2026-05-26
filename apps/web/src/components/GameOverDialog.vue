@@ -1,10 +1,12 @@
 <script setup lang="ts">
 	import { Trophy, X } from '@lucide/vue';
+	import type { Difficulty } from '@packages/types';
+	import { useI18n } from 'vue-i18n';
 
 	defineProps<{
 		open: boolean;
 		score: number;
-		modeLabel: string;
+		mode: Difficulty;
 		length: number;
 		isUploading: boolean;
 		uploadError: string | null;
@@ -14,6 +16,8 @@
 		close: [];
 		playAgain: [];
 	}>();
+
+	const { n, t } = useI18n({ useScope: 'global' });
 </script>
 
 <template>
@@ -37,11 +41,11 @@
 							class="text-evosnake-primary h-6 w-6"
 							aria-hidden="true"
 						/>
-						Game Over
+						{{ t('gameOver.title') }}
 					</h2>
 					<button
 						type="button"
-						aria-label="Close game over"
+						:aria-label="t('gameOver.close')"
 						class="text-evosnake-muted hover:text-evosnake-text rounded-lg p-1"
 						@click="emit('close')"
 					>
@@ -57,10 +61,10 @@
 						class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid gap-1 border px-4 py-3"
 					>
 						<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
-							Final Score
+							{{ t('gameOver.finalScore') }}
 						</div>
 						<div class="text-evosnake-text text-2xl font-black">
-							{{ score.toLocaleString() }}
+							{{ n(score, 'decimal') }}
 						</div>
 					</div>
 
@@ -69,17 +73,17 @@
 							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid gap-1 border px-3 py-2.5"
 						>
 							<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
-								Mode
+								{{ t('game.mode') }}
 							</div>
 							<div class="text-evosnake-text text-sm font-bold">
-								{{ modeLabel }}
+								{{ t(`difficulty.${mode}`) }}
 							</div>
 						</div>
 						<div
 							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid gap-1 border px-3 py-2.5"
 						>
 							<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
-								Length
+								{{ t('gameOver.length') }}
 							</div>
 							<div class="text-evosnake-text text-sm font-bold">
 								{{ length }}
@@ -91,19 +95,19 @@
 						v-if="uploadError"
 						class="rounded-evosnake border-evosnake-danger bg-evosnake-danger/10 text-evosnake-danger border px-3 py-2 text-sm"
 					>
-						{{ uploadError }}
+						{{ t(uploadError) }}
 					</div>
 					<div
 						v-else-if="isUploading"
 						class="text-evosnake-muted text-center text-sm"
 					>
-						Uploading score...
+						{{ t('gameOver.uploading') }}
 					</div>
 					<div
 						v-else
 						class="text-evosnake-primary text-center text-sm"
 					>
-						Score uploaded
+						{{ t('gameOver.uploaded') }}
 					</div>
 				</div>
 
@@ -113,14 +117,14 @@
 						class="rounded-evosnake bg-evosnake-primary hover:bg-evosnake-primaryHover px-4 py-2.5 font-bold text-[#08100b] transition-colors"
 						@click="emit('playAgain')"
 					>
-						Play Again
+						{{ t('gameOver.playAgain') }}
 					</button>
 					<button
 						type="button"
 						class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 text-evosnake-text hover:border-evosnake-primary border px-4 py-2.5 font-bold transition-colors"
 						@click="emit('close')"
 					>
-						Main Menu
+						{{ t('gameOver.mainMenu') }}
 					</button>
 				</div>
 			</section>

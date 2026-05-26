@@ -1,6 +1,7 @@
 <script setup lang="ts">
 	import { AppleIcon, ArrowLeft as ArrowLeftIcon } from '@lucide/vue';
 	import { computed, nextTick, onMounted, onUnmounted, ref, type CSSProperties, watch } from 'vue';
+	import { useI18n } from 'vue-i18n';
 
 	import ActiveEffectsPanel from '../components/ActiveEffectsPanel.vue';
 	import BonusChainPanel from '../components/BonusChainPanel.vue';
@@ -24,6 +25,7 @@
 	}>();
 
 	const store = useGameStore();
+	const { t } = useI18n({ useScope: 'global' });
 
 	const difficulty = computed(() => store.selectedDifficulty);
 	const {
@@ -33,10 +35,10 @@
 		apples,
 		bonusChain,
 		showGameOver,
-		currentConfig,
 		mapWidth,
 		mapHeight,
 		displayMultiplier,
+		activeEventType,
 		activeEventTheme,
 		bonusChainTargetAppleIds,
 		isGhostActive,
@@ -211,13 +213,11 @@
 	async function handleUploadScore() {
 		isUploading.value = true;
 		uploadError.value = null;
-		try {
-			await store.postScore(score.value, difficulty.value);
-		} catch (err) {
-			uploadError.value = err instanceof Error ? err.message : 'Failed to upload score';
-		} finally {
-			isUploading.value = false;
+		const ok = await store.postScore(score.value, difficulty.value);
+		if (!ok) {
+			uploadError.value = store.error ?? 'errors.uploadScoreFailed';
 		}
+		isUploading.value = false;
 	}
 
 	function handleCloseGameOver() {
@@ -265,7 +265,7 @@
 	>
 		<section
 			class="grid w-full max-w-245 gap-4"
-			aria-label="EvoSnake game view"
+			:aria-label="t('game.viewAriaLabel')"
 		>
 			<div class="flex items-center gap-2">
 				<button
@@ -277,32 +277,32 @@
 						class="h-4 w-4"
 						aria-hidden="true"
 					/>
-					Back to Menu
+					{{ t('game.backToMenu') }}
 				</button>
 			</div>
 
 			<section
 				class="grid items-end gap-4 lg:grid-cols-[minmax(0,1fr)_220px]"
-				aria-label="Game play area"
+				:aria-label="t('game.gameplayArea')"
 			>
 				<div class="grid min-w-0 gap-4">
 					<GameStatusPanel
 						:score="score"
 						:multiplier="displayMultiplier"
-						:mode-label="currentConfig.label"
+						:mode="difficulty"
 					/>
 
 					<section
 						class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakePanel border p-2.5 md:p-3.5"
 						:class="{ 'event-board-glow': !!activeEventTheme }"
 						:style="eventStyleVars"
-						aria-label="Game board container"
+						:aria-label="t('game.boardContainer')"
 					>
 						<div
 							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 relative aspect-square w-full overflow-hidden border"
 							:class="{ 'event-board-glow': !!activeEventTheme }"
 							:style="eventStyleVars"
-							aria-label="Square game area"
+							:aria-label="t('game.boardArea')"
 						>
 							<div
 								v-if="activeEventTheme"
@@ -315,13 +315,13 @@
 								}"
 							>
 								<div class="text-[10px] font-extrabold tracking-[0.18em] text-white/70 uppercase">
-									Event Live
+									{{ t('game.eventLive') }}
 								</div>
 								<div
 									class="text-sm leading-none font-black"
 									:style="{ color: activeEventTheme.accent }"
 								>
-									{{ activeEventTheme.label }}
+									{{ activeEventType ? t(`events.${activeEventType}.name`) : '' }}
 								</div>
 							</div>
 
@@ -379,7 +379,7 @@
 		<GameOverDialog
 			:open="showGameOver"
 			:score="score"
-			:mode-label="currentConfig.label"
+			:mode="difficulty"
 			:length="snakeBody.length"
 			:is-uploading="isUploading"
 			:upload-error="uploadError"

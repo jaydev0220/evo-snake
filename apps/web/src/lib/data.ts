@@ -170,44 +170,20 @@ export const GOLDEN_SHINE_COLOR = 'rgba(255, 255, 255, 0.6)';
 
 export interface FruitGuideItem {
 	id: AppleType;
-	name: string;
-	effect: string;
 }
 
 export const FRUIT_GUIDE: FruitGuideItem[] = [
-	{ id: 'classic', name: 'Classic Apple', effect: 'Increases your score and grows the snake.' },
-	{ id: 'shrink', name: 'Shrink Apple', effect: 'Shortens the snake without giving points.' },
-	{
-		id: 'turbo',
-		name: 'Turbo Apple',
-		effect:
-			"Temporarily increases the snake's speed and raises the points multiplier without giving points."
-	},
-	{
-		id: 'chill',
-		name: 'Chill Apple',
-		effect:
-			'Temporarily slows the snake down. During Ice Age, it instead makes the snake slip forward one extra tile.'
-	},
-	{
-		id: 'ghost',
-		name: 'Ghost Apple',
-		effect: 'Temporarily lets the snake pass through its own body without giving points.'
-	},
-	{
-		id: 'golden',
-		name: 'Golden Apple',
-		effect: "Gives bonus points without increasing the snake's length."
-	},
-	{
-		id: 'rotten',
-		name: 'Rotten Apple',
-		effect: 'Appears when a special apple expires, disappears quickly, and costs points if eaten.'
-	}
+	{ id: 'classic' },
+	{ id: 'shrink' },
+	{ id: 'turbo' },
+	{ id: 'chill' },
+	{ id: 'ghost' },
+	{ id: 'golden' },
+	{ id: 'rotten' }
 ];
 
-export const EFFECT_LABELS: Record<string, { label: string; color: string }> = {
-	turbo: { label: 'Turbo', color: '#F97316' },
-	chill: { label: 'Chill', color: '#38BDF8' },
-	ghost: { label: 'Ghost', color: '#E0F2FE' }
+export const EFFECT_COLORS: Record<ActiveEffect['type'], string> = {
+	turbo: '#F97316',
+	chill: '#38BDF8',
+	ghost: '#E0F2FE'
 };

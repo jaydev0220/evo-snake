@@ -1,7 +1,8 @@
 {
 	"name": "EvoSnake",
 	"short_name": "EvoSnake",
-	"description": "A browser snake game with special apples, live events, multiple difficulties, and leaderboard competition.",
+	"description": "一款結合特殊蘋果、即時事件、多種難度與排行榜競賽的瀏覽器貪吃蛇遊戲。",
+	"lang": "zh-TW",
 	"start_url": "/",
 	"display": "standalone",
 	"background_color": "#0f1411",

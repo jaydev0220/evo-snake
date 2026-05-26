@@ -1,14 +1,18 @@
+import { watch } from 'vue';
+
+import { i18n, SUPPORTED_LOCALES, type AppLocale } from './i18n';
+
 const APP_NAME = 'EvoSnake';
-const DEFAULT_TITLE = 'EvoSnake | Browser Snake Game';
-const DEFAULT_DESCRIPTION =
-	'Play EvoSnake, a free browser snake game with special apples, live events, difficulty modes, and leaderboard competition straight from your web browser.';
-const DEFAULT_KEYWORDS =
-	'snake game, browser snake game, web game, arcade game, leaderboard game, bonus chain, gold rush, ice age';
-const DEFAULT_LOCALE = 'zh_TW';
-const DEFAULT_LANGUAGE = 'zh_TW';
 const DEFAULT_THEME_COLOR = '#0f1411';
-const OG_IMAGE_PATH = '/og-image.svg';
-const OG_IMAGE_ALT = 'EvoSnake preview artwork showing a snake board, apples, and event callouts';
+const OG_IMAGE_PATH = '/og-image.webp';
+const OG_IMAGE_TYPE = 'image/webp';
+const ROBOTS_CONTENT =
+	'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+
+const OG_LOCALES: Record<AppLocale, string> = {
+	'zh-TW': 'zh_TW',
+	en: 'en_US'
+};
 
 type MetaDefinition = {
 	attr: 'name' | 'property';
@@ -41,6 +45,17 @@ function upsertMeta({ attr, key, content }: MetaDefinition) {
 	element.setAttribute('content', content);
 }
 
+function replaceMetaGroup(attr: 'name' | 'property', key: string, contents: string[]) {
+	document.head.querySelectorAll(`meta[${attr}="${key}"]`).forEach((element) => element.remove());
+
+	for (const content of contents) {
+		const element = document.createElement('meta');
+		element.setAttribute(attr, key);
+		element.setAttribute('content', content);
+		document.head.appendChild(element);
+	}
+}
+
 function upsertCanonical(url: string) {
 	let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
 
@@ -53,7 +68,12 @@ function upsertCanonical(url: string) {
 	canonical.setAttribute('href', url);
 }
 
-function upsertStructuredData(siteUrl: string, pageUrl: string, imageUrl: string) {
+function upsertStructuredData(
+	locale: AppLocale,
+	siteUrl: string,
+	pageUrl: string,
+	imageUrl: string
+) {
 	let script = document.head.querySelector<HTMLScriptElement>('#structured-data');
 
 	if (!script) {
@@ -72,8 +92,9 @@ function upsertStructuredData(siteUrl: string, pageUrl: string, imageUrl: string
 					'@id': `${siteUrl}/#website`,
 					name: APP_NAME,
 					url: `${siteUrl}/`,
-					description: DEFAULT_DESCRIPTION,
-					inLanguage: DEFAULT_LANGUAGE,
+					description: translate('seo.description'),
+					inLanguage: locale,
+					availableLanguage: SUPPORTED_LOCALES,
 					mainEntity: { '@id': `${pageUrl}#game` }
 				},
 				{
@@ -81,15 +102,16 @@ function upsertStructuredData(siteUrl: string, pageUrl: string, imageUrl: string
 					'@id': `${pageUrl}#game`,
 					name: APP_NAME,
 					url: pageUrl,
-					description: DEFAULT_DESCRIPTION,
+					description: translate('seo.description'),
 					image: [imageUrl],
-					inLanguage: DEFAULT_LANGUAGE,
+					inLanguage: locale,
+					availableLanguage: SUPPORTED_LOCALES,
 					gamePlatform: ['Web Browser'],
 					playMode: 'SinglePlayer',
 					genre: ['Arcade', 'Snake'],
 					isAccessibleForFree: true,
 					operatingSystem: 'Any',
-					keywords: DEFAULT_KEYWORDS,
+					keywords: translate('seo.keywords'),
 					potentialAction: {
 						'@type': 'PlayAction',
 						target: pageUrl
@@ -109,52 +131,68 @@ function upsertStructuredData(siteUrl: string, pageUrl: string, imageUrl: string
 	);
 }
 
-export function applyDefaultSeo() {
+function getCurrentLocale() {
+	const locale = i18n.global.locale;
+	return (typeof locale === 'string' ? locale : locale.value) as AppLocale;
+}
+
+function translate(key: string) {
+	return String(i18n.global.t(key as never));
+}
+
+function applySeo(locale: AppLocale) {
 	const siteUrl = normalizeSiteUrl(import.meta.env.VITE_SITE_URL);
 	const pageUrl = getCurrentPageUrl(siteUrl);
 	const imageUrl = resolveAbsoluteUrl(OG_IMAGE_PATH, siteUrl);
+	const alternateLocales = SUPPORTED_LOCALES.filter((entry) => entry !== locale).map(
+		(entry) => OG_LOCALES[entry]
+	);
 
-	document.title = DEFAULT_TITLE;
-	document.documentElement.lang = DEFAULT_LANGUAGE;
+	document.title = translate('seo.title');
+	document.documentElement.lang = locale;
 
 	const metas: MetaDefinition[] = [
-		{ attr: 'name', key: 'description', content: DEFAULT_DESCRIPTION },
-		{ attr: 'name', key: 'keywords', content: DEFAULT_KEYWORDS },
-		{
-			attr: 'name',
-			key: 'robots',
-			content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'
-		},
-		{
-			attr: 'name',
-			key: 'googlebot',
-			content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'
-		},
+		{ attr: 'name', key: 'description', content: translate('seo.description') },
+		{ attr: 'name', key: 'keywords', content: translate('seo.keywords') },
+		{ attr: 'name', key: 'language', content: locale },
+		{ attr: 'name', key: 'robots', content: ROBOTS_CONTENT },
+		{ attr: 'name', key: 'googlebot', content: ROBOTS_CONTENT },
 		{ attr: 'name', key: 'application-name', content: APP_NAME },
 		{ attr: 'name', key: 'apple-mobile-web-app-title', content: APP_NAME },
 		{ attr: 'name', key: 'theme-color', content: DEFAULT_THEME_COLOR },
 		{ attr: 'property', key: 'og:site_name', content: APP_NAME },
 		{ attr: 'property', key: 'og:type', content: 'website' },
-		{ attr: 'property', key: 'og:locale', content: DEFAULT_LOCALE },
-		{ attr: 'property', key: 'og:title', content: DEFAULT_TITLE },
-		{ attr: 'property', key: 'og:description', content: DEFAULT_DESCRIPTION },
+		{ attr: 'property', key: 'og:locale', content: OG_LOCALES[locale] },
+		{ attr: 'property', key: 'og:title', content: translate('seo.title') },
+		{ attr: 'property', key: 'og:description', content: translate('seo.description') },
 		{ attr: 'property', key: 'og:url', content: pageUrl },
 		{ attr: 'property', key: 'og:image', content: imageUrl },
-		{ attr: 'property', key: 'og:image:type', content: 'image/svg+xml' },
+		{ attr: 'property', key: 'og:image:type', content: OG_IMAGE_TYPE },
 		{ attr: 'property', key: 'og:image:width', content: '1200' },
 		{ attr: 'property', key: 'og:image:height', content: '630' },
-		{ attr: 'property', key: 'og:image:alt', content: OG_IMAGE_ALT },
+		{ attr: 'property', key: 'og:image:alt', content: translate('seo.ogImageAlt') },
 		{ attr: 'name', key: 'twitter:card', content: 'summary_large_image' },
-		{ attr: 'name', key: 'twitter:title', content: DEFAULT_TITLE },
-		{ attr: 'name', key: 'twitter:description', content: DEFAULT_DESCRIPTION },
+		{ attr: 'name', key: 'twitter:title', content: translate('seo.title') },
+		{ attr: 'name', key: 'twitter:description', content: translate('seo.description') },
 		{ attr: 'name', key: 'twitter:image', content: imageUrl },
-		{ attr: 'name', key: 'twitter:image:alt', content: OG_IMAGE_ALT }
+		{ attr: 'name', key: 'twitter:image:alt', content: translate('seo.ogImageAlt') }
 	];
 
 	for (const meta of metas) {
 		upsertMeta(meta);
 	}
 
+	replaceMetaGroup('property', 'og:locale:alternate', alternateLocales);
 	upsertCanonical(pageUrl);
-	upsertStructuredData(siteUrl, pageUrl, imageUrl);
+	upsertStructuredData(locale, siteUrl, pageUrl, imageUrl);
+}
+
+export function setupSeo() {
+	watch(
+		() => getCurrentLocale(),
+		(locale) => {
+			applySeo(locale);
+		},
+		{ immediate: true }
+	);
 }

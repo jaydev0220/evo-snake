@@ -530,6 +530,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		mapWidth,
 		mapHeight,
 		displayMultiplier,
+		activeEventType,
 		activeEventTheme,
 		bonusChainTargetAppleIds,
 		isGhostActive,

@@ -1,23 +1,25 @@
 <script setup lang="ts">
 	import { Apple as AppleIcon } from '@lucide/vue';
+	import { useI18n } from 'vue-i18n';
 
 	defineProps<{
 		effects: Array<{
 			type: string;
-			label: string;
 			color: string;
 			remaining: number;
 		}>;
 	}>();
+
+	const { t } = useI18n({ useScope: 'global' });
 </script>
 
 <template>
 	<section
 		class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakeCard border p-3.5 md:p-4.5"
-		aria-label="Active effects"
+		:aria-label="t('game.activeEffects')"
 	>
 		<div class="text-evosnake-muted mb-2 text-xs font-extrabold tracking-wider uppercase">
-			Active Effects
+			{{ t('game.activeEffects') }}
 		</div>
 		<div class="grid gap-1.5">
 			<div
@@ -31,7 +33,9 @@
 						:color="effect.color"
 						aria-hidden="true"
 					/>
-					<span class="text-evosnake-text text-sm font-bold">{{ effect.label }}</span>
+					<span class="text-evosnake-text text-sm font-bold">
+						{{ t(`effects.${effect.type}`) }}
+					</span>
 				</div>
 				<span class="text-evosnake-muted font-mono text-xs">{{ effect.remaining }}s</span>
 			</div>

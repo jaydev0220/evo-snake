@@ -1,34 +1,37 @@
 <script setup lang="ts">
+	import { useI18n } from 'vue-i18n';
+
 	import { useGameStore } from '../lib/stores/game';
 
 	const store = useGameStore();
+	const { n, t } = useI18n({ useScope: 'global' });
 </script>
 
 <template>
 	<aside
 		class="bg-evosnake-surface border-evosnake-border rounded-evosnakePanel shadow-evosnakePanel border p-5 md:p-6"
 	>
-		<h2 class="mb-4 text-[22px] font-bold tracking-[-0.03em]">Leaderboard</h2>
+		<h2 class="mb-4 text-[22px] font-bold tracking-[-0.03em]">{{ t('leaderboard.title') }}</h2>
 
 		<div
 			v-if="store.isLoading"
 			class="text-evosnake-muted flex items-center justify-center py-8"
 		>
-			Loading...
+			{{ t('leaderboard.loading') }}
 		</div>
 
 		<div
 			v-else-if="store.error"
 			class="rounded-evosnake border-evosnake-danger bg-evosnake-danger/10 text-evosnake-dangerHover border px-4 py-3 text-sm"
 		>
-			{{ store.error }}
+			{{ t(store.error) }}
 		</div>
 
 		<div
 			v-else-if="store.leaderboard.length === 0"
 			class="text-evosnake-muted py-8 text-center text-sm"
 		>
-			No scores yet this week. Be the first!
+			{{ t('leaderboard.empty') }}
 		</div>
 
 		<div
@@ -45,9 +48,9 @@
 			>
 				<div class="text-evosnake-muted font-extrabold">{{ entry.rank }}</div>
 				<div class="truncate font-bold">
-					{{ entry.playerId === store.playerId ? 'You' : entry.playerName }}
+					{{ entry.playerId === store.playerId ? t('leaderboard.you') : entry.playerName }}
 				</div>
-				<div class="text-evosnake-primary font-extrabold">{{ entry.score.toLocaleString() }}</div>
+				<div class="text-evosnake-primary font-extrabold">{{ n(entry.score, 'decimal') }}</div>
 			</div>
 
 			<div
@@ -58,9 +61,9 @@
 					class="rounded-evosnake border-evosnake-primary bg-evosnake-surface2 grid grid-cols-[34px_1fr_auto] items-center gap-2.5 border p-3"
 				>
 					<div class="text-evosnake-muted font-extrabold">{{ store.myRank.rank }}</div>
-					<div class="truncate font-bold">You</div>
+					<div class="truncate font-bold">{{ t('leaderboard.you') }}</div>
 					<div class="text-evosnake-primary font-extrabold">
-						{{ store.myRank.score.toLocaleString() }}
+						{{ n(store.myRank.score, 'decimal') }}
 					</div>
 				</div>
 			</div>

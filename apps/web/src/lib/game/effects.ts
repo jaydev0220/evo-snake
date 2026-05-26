@@ -4,7 +4,7 @@ import {
 	CHILL_POINTS_DELTA,
 	CHILL_SPEED_MULTIPLIER,
 	CLASSIC_LENGTH_DELTA,
-	EFFECT_LABELS,
+	EFFECT_COLORS,
 	GHOST_DURATION_MS,
 	GOLDEN_SCORE_MULTIPLIER,
 	MAX_POINTS_MULTIPLIER,
@@ -23,7 +23,6 @@ import { clamp } from './geometry';
 type SpeedEffectType = 'turbo' | 'chill';
 
 export interface ActiveEffectView extends ActiveEffect {
-	label: string;
 	color: string;
 	remaining: number;
 }
@@ -69,8 +68,7 @@ export function getCurrentTickMs(baseTickMs: number, activeEffects: ActiveEffect
 export function getActiveEffectsList(activeEffects: ActiveEffect[], now = Date.now()) {
 	return activeEffects.map((effect): ActiveEffectView => {
 		const remaining = Math.max(0, Math.ceil((effect.expiresAt - now) / 1000));
-		const info = EFFECT_LABELS[effect.type]!;
-		return { ...effect, label: info.label, color: info.color, remaining };
+		return { ...effect, color: EFFECT_COLORS[effect.type], remaining };
 	});
 }
 
