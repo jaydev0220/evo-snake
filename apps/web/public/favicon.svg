@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" shape-rendering="crispEdges">
+    <defs>
+        <linearGradient id="borderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#F472B6"/> <stop offset="45%" stop-color="#FACC15"/> <stop offset="100%" stop-color="#A5F3FC"/> </linearGradient>
+    </defs>
+
+    <rect x="31" y="31" width="450" height="450" rx="99" ry="99" fill="url(#borderGradient)"/>
+
+    <rect x="71" y="71" width="370" height="370" rx="59" ry="59" fill="#1f2a23"/>
+
+    <g id="snake">
+        <rect x="130" y="370" width="50" height="50" rx="12" ry="12" fill="#54d978"/> <rect x="130" y="320" width="50" height="50" rx="12" ry="12" fill="#54d978"/>
+        <rect x="130" y="270" width="50" height="50" rx="12" ry="12" fill="#54d978"/>
+        <rect x="180" y="270" width="50" height="50" rx="12" ry="12" fill="#54d978"/> <rect x="230" y="270" width="50" height="50" rx="12" ry="12" fill="#54d978"/>
+        <rect x="230" y="220" width="50" height="50" rx="12" ry="12" fill="#54d978"/> <rect x="230" y="170" width="50" height="50" rx="12" ry="12" fill="#54d978"/>
+
+        <g id="head">
+            <rect x="230" y="120" width="50" height="50" rx="12" ry="12" fill="#68ec8b"/>
+            <circle cx="245" cy="135" r="5" fill="#ffffff"/>
+            <circle cx="265" cy="135" r="5" fill="#ffffff"/>
+        </g>
+    </g>
+
+    <g id="apple" transform="translate(323, 86)">
+        <path d="M 35,15 C 19,4 4,24 4,39 C 4,59 19,74 39,74 C 59,74 74,59 74,39 C 74,24 59,4 43,15 L 35,15 Z" fill="#E53935" stroke="#9F1D1D" stroke-width="4"/>
+        <path d="M 39,15 L 39,0" stroke="#9F1D1D" stroke-width="4" stroke-linecap="round"/>
+    </g>
+</svg>
