@@ -22,7 +22,7 @@
 <template>
 	<section
 		class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakeCard grid gap-3 border p-3.5 md:p-4.5"
-		:aria-label="t('events.bonusChain.panelTitle')"
+		:aria-label="t('events.bonusChain.name')"
 		:style="
 			theme
 				? {
@@ -33,13 +33,8 @@
 		"
 	>
 		<div class="flex items-start justify-between gap-3">
-			<div>
-				<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
-					{{ t('events.bonusChain.panelTitle') }}
-				</div>
-				<p class="text-evosnake-muted mt-1 text-sm leading-5">
-					{{ t('events.bonusChain.panelInstruction') }}
-				</p>
+			<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
+				{{ t('events.bonusChain.name') }}
 			</div>
 			<div
 				class="text-right text-sm font-black"
