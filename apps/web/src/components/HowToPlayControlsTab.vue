@@ -87,12 +87,24 @@
 					v-else
 					class="border-evosnake-border bg-evosnake-bg text-evosnake-muted grid min-h-20 w-full place-items-center rounded-xl border px-4 text-xs font-extrabold tracking-[0.2em] uppercase"
 				>
-					<div class="flex items-center gap-2">
-						<span class="bg-evosnake-primary size-2 animate-pulse rounded-full opacity-70" />
+					<div class="flex w-full flex-col items-center gap-3">
+						<div
+							class="relative h-9 w-full max-w-44 overflow-hidden"
+							:aria-label="t(`controls.${control.id}Aria`)"
+						>
+							<span
+								class="animate-evosnake-swipe-gesture absolute top-1/2 left-1/2 block h-5 w-28 motion-reduce:animate-none"
+								aria-hidden="true"
+							>
+								<span
+									class="absolute top-1/2 right-4 h-2.5 w-10 -translate-y-1/2 rounded-full bg-linear-to-r from-white/0 via-white/45 to-white/90 blur-[1px]"
+								/>
+								<span
+									class="absolute top-1/2 right-0 size-5 -translate-y-1/2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.88),0_0_16px_rgba(84,217,120,0.4)]"
+								/>
+							</span>
+						</div>
 						<span>{{ t('controls.swipe') }}</span>
-						<span
-							class="bg-evosnake-primary size-2 animate-pulse rounded-full opacity-70 [animation-delay:180ms]"
-						/>
 					</div>
 				</div>
 			</article>
