@@ -1,10 +1,17 @@
 <script setup lang="ts">
+	import { computed } from 'vue';
 	import { useI18n } from 'vue-i18n';
 
+	import { getAsianScoreGrade, isAsianDifficulty } from '../lib/asian-mode';
 	import { useGameStore } from '../lib/stores/game';
 
 	const store = useGameStore();
 	const { n, t } = useI18n({ useScope: 'global' });
+	const isAsianMode = computed(() => isAsianDifficulty(store.selectedDifficulty));
+
+	function formatScore(score: number) {
+		return isAsianMode.value ? getAsianScoreGrade(score) : String(n(score, 'decimal'));
+	}
 </script>
 
 <template>
@@ -50,7 +57,7 @@
 				<div class="truncate font-bold">
 					{{ entry.playerId === store.playerId ? t('leaderboard.you') : entry.playerName }}
 				</div>
-				<div class="text-evosnake-primary font-extrabold">{{ n(entry.score, 'decimal') }}</div>
+				<div class="text-evosnake-primary font-extrabold">{{ formatScore(entry.score) }}</div>
 			</div>
 
 			<div
@@ -63,7 +70,7 @@
 					<div class="text-evosnake-muted font-extrabold">{{ store.myRank.rank }}</div>
 					<div class="truncate font-bold">{{ t('leaderboard.you') }}</div>
 					<div class="text-evosnake-primary font-extrabold">
-						{{ n(store.myRank.score, 'decimal') }}
+						{{ formatScore(store.myRank.score) }}
 					</div>
 				</div>
 			</div>

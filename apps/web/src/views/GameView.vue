@@ -46,6 +46,7 @@
 		isChillActive,
 		bonusChainSteps,
 		activeEffectsList,
+		appleFeedback,
 		renderVersion,
 		setDirection,
 		handleKeydown,
@@ -78,7 +79,6 @@
 			'--event-target-outline': activeEventTheme.value.targetOutline
 		} as CSSProperties;
 	});
-
 	function resizeCanvas() {
 		const canvas = canvasRef.value;
 		if (!canvas) return;
@@ -323,6 +323,21 @@
 								>
 									{{ activeEventType ? t(`events.${activeEventType}.name`) : '' }}
 								</div>
+							</div>
+
+							<div
+								v-if="appleFeedback"
+								:key="appleFeedback.id"
+								class="pointer-events-none absolute right-0 left-0 z-30 w-full px-4 text-center text-lg leading-tight font-black text-white uppercase"
+								:class="appleFeedback.placement === 'bottom' ? 'bottom-8' : 'top-8'"
+							>
+								<span
+									class="[text-shadow:0_4px_18px_rgba(0,0,0,0.9),0_0_20px_rgba(255,255,255,0.28)]"
+								>
+									{{
+										t(`asianMode.appleFeedback.${appleFeedback.type}.${appleFeedback.lineIndex}`)
+									}}
+								</span>
 							</div>
 
 							<canvas

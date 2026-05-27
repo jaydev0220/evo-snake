@@ -1,9 +1,12 @@
 <script setup lang="ts">
 	import { Trophy, X } from '@lucide/vue';
 	import type { Difficulty } from '@packages/types';
+	import { computed } from 'vue';
 	import { useI18n } from 'vue-i18n';
 
-	defineProps<{
+	import { getAsianScoreGrade, isAsianDifficulty } from '../lib/asian-mode';
+
+	const props = defineProps<{
 		open: boolean;
 		score: number;
 		mode: Difficulty;
@@ -18,6 +21,11 @@
 	}>();
 
 	const { n, t } = useI18n({ useScope: 'global' });
+	const isAsianMode = computed(() => isAsianDifficulty(props.mode));
+	const scoreGrade = computed(() => getAsianScoreGrade(props.score));
+	const displayedScore = computed(() =>
+		isAsianMode.value ? scoreGrade.value : String(n(props.score, 'decimal'))
+	);
 </script>
 
 <template>
@@ -64,7 +72,13 @@
 							{{ t('gameOver.finalScore') }}
 						</div>
 						<div class="text-evosnake-text text-2xl font-black">
-							{{ n(score, 'decimal') }}
+							{{ displayedScore }}
+						</div>
+						<div
+							v-if="isAsianMode"
+							class="text-evosnake-muted mt-1 text-sm leading-snug"
+						>
+							{{ t(`asianMode.grade.lines.${scoreGrade}`) }}
 						</div>
 					</div>
 

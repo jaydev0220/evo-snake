@@ -119,6 +119,9 @@
 			<LeaderboardPanel />
 		</section>
 
-		<HowToPlayModal v-model="showHowToPlay" />
+		<HowToPlayModal
+			v-model="showHowToPlay"
+			:difficulty="store.selectedDifficulty"
+		/>
 	</main>
 </template>

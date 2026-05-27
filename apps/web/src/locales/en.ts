@@ -134,6 +134,47 @@ const en = {
 		playAgain: 'Play Again',
 		mainMenu: 'Main Menu'
 	},
+	asianMode: {
+		guide: {
+			roastLines: [
+				'Your cousin beat the game blindfolded. You are still reading “How to Play.”',
+				'You need instructions for game also? Your cousin learned piano, coding, and tax law by age seven.',
+				'Haiya, still need guide? Your cousin cleared this with chopsticks while solving calculus problems.'
+			]
+		},
+		downgrade: {
+			close: 'Close difficulty review',
+			lines: [
+				'Your cousin lowered the difficulty once. It was to make the game feel better about itself.',
+				'Haiya, even your rice cooker handles pressure better than this.',
+				'Your ancestors survived famine, war, and math homework. You saw the snake get longer and called it pressure.',
+				'The snake grows three blocks and suddenly life is too hard?',
+				"Your ancestors crossed mountains. You couldn't cross your own tail.",
+				'Your bloodline survived centuries just to watch you panic in a square box.'
+			]
+		},
+		grade: {
+			lines: {
+				F: 'F stands for Failure. Exactly like you.',
+				D: 'This score is so low, even dinner lost its appetite.',
+				C: 'Could be worse. Still not a compliment.',
+				B: 'One letter away from A, one lecture away from ruining dinner.',
+				A: 'Finally, you hit the Average. Your parents call this “expected.”'
+			}
+		},
+		appleFeedback: {
+			chill: [
+				'Even the snake slowed down for you.',
+				'Slower snake, lower score. Fair trade for weak reflexes.',
+				"The snake cooled down, as your parents' expectations."
+			],
+			rotten: [
+				"Points gone. Like your parents' patience.",
+				'You saw rotten and still ate it. This explains your grades.',
+				'Even the fruit is teaching you consequences.'
+			]
+		}
+	},
 	errors: {
 		playerNameRequired: 'Player name is required.',
 		loadLeaderboardFailed: 'Failed to load leaderboard.',

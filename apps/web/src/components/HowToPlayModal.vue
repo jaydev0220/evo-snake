@@ -1,8 +1,14 @@
 <script setup lang="ts">
 	import { X } from '@lucide/vue';
+	import type { Difficulty } from '@packages/types';
 	import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 	import { useI18n } from 'vue-i18n';
 
+	import {
+		ASIAN_ROAST_LINE_COUNT,
+		getRandomMessageIndex,
+		isAsianDifficulty
+	} from '../lib/asian-mode';
 	import { FRUIT_GUIDE } from '../lib/data';
 	import { CONTROL_GUIDE_CARDS, EVENT_GUIDE_ITEMS, type GuideTab } from '../lib/how-to-play';
 	import HowToPlayApplesTab from './HowToPlayApplesTab.vue';
@@ -10,9 +16,13 @@
 	import HowToPlayEventsTab from './HowToPlayEventsTab.vue';
 
 	const isOpen = defineModel<boolean>({ required: true });
+	const props = defineProps<{
+		difficulty: Difficulty;
+	}>();
 	const { t } = useI18n({ useScope: 'global' });
 
 	const activeTab = ref<GuideTab>('controls');
+	const roastLineIndex = ref(0);
 	const modalRef = ref<HTMLElement | null>(null);
 	let triggerElement: HTMLElement | null = null;
 
@@ -33,6 +43,7 @@
 			detail: t('howToPlay.eventsCount', { count: EVENT_GUIDE_ITEMS.length })
 		}
 	]);
+	const isAsianGuide = computed(() => isAsianDifficulty(props.difficulty));
 
 	function close() {
 		isOpen.value = false;
@@ -103,6 +114,7 @@
 	watch(isOpen, async (open) => {
 		if (open) {
 			triggerElement = document.activeElement as HTMLElement | null;
+			roastLineIndex.value = getRandomMessageIndex(ASIAN_ROAST_LINE_COUNT);
 			document.addEventListener('keydown', onDocumentKeydown);
 			await nextTick();
 			modalRef.value?.focus();
@@ -132,7 +144,12 @@
 				aria-modal="true"
 				aria-labelledby="play-guide-title"
 				tabindex="-1"
-				class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakePanel grid max-h-[calc(100vh-40px)] w-full max-w-205 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden border outline-none md:max-h-180"
+				class="rounded-evosnakePanel border-evosnake-border bg-evosnake-surface shadow-evosnakePanel grid max-h-[calc(100vh-40px)] w-full overflow-hidden border outline-none md:max-h-180"
+				:class="
+					isAsianGuide
+						? 'max-w-lg grid-rows-[auto_minmax(0,1fr)]'
+						: 'max-w-205 grid-rows-[auto_auto_minmax(0,1fr)]'
+				"
 			>
 				<header
 					class="border-evosnake-border grid grid-cols-[1fr_auto] items-center gap-4 border-b px-4 py-4 md:px-5"
@@ -163,6 +180,7 @@
 				</header>
 
 				<nav
+					v-if="!isAsianGuide"
 					class="border-evosnake-border grid grid-cols-3 gap-1.5 border-b p-2.5 md:gap-2 md:px-4"
 					:aria-label="t('howToPlay.sections')"
 					role="tablist"
@@ -190,7 +208,16 @@
 
 				<div class="min-h-0 overflow-y-auto p-4 md:p-5">
 					<section
-						v-if="activeTab === 'controls'"
+						v-if="isAsianGuide"
+						class="rounded-evosnake border-evosnake-danger bg-evosnake-danger/10 grid min-h-64 place-items-center border p-6 text-center"
+					>
+						<p class="text-evosnake-text text-2xl leading-tight font-black">
+							{{ t(`asianMode.guide.roastLines.${roastLineIndex}`) }}
+						</p>
+					</section>
+
+					<section
+						v-else-if="activeTab === 'controls'"
 						:id="getPanelId('controls')"
 						:aria-labelledby="getTabId('controls')"
 						role="tabpanel"

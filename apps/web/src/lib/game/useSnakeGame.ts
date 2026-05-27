@@ -2,6 +2,12 @@ import type { Difficulty } from '@packages/types';
 import { computed, ref, type Ref } from 'vue';
 
 import {
+	ASIAN_APPLE_FEEDBACK_LINE_COUNT,
+	getRandomMessageIndex,
+	isAsianDifficulty,
+	type AsianFeedbackAppleType
+} from '../asian-mode';
+import {
 	APPLE_SPAWN_WEIGHTS,
 	BONUS_CHAIN_COMPLETION_BONUS,
 	DIFFICULTIES,
@@ -42,12 +48,21 @@ import {
 import { getRandomGameEventDelay, pickRandomGameEvent, shouldTriggerGameEvent } from './events';
 import {
 	areOpposite,
+	clamp,
 	collidesWithSnakeBody,
 	directionToVector,
 	getNextPosition,
 	isOutsideBounds,
 	isSamePosition
 } from './geometry';
+
+export interface AppleFeedbackCue {
+	id: number;
+	type: AsianFeedbackAppleType;
+	position: Position;
+	placement: 'top' | 'bottom';
+	lineIndex: number;
+}
 
 export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 	const status = ref<GameStatus>('playing');
@@ -66,8 +81,11 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 	const eventTimer = ref<number | null>(null);
 	const showGameOver = ref(false);
 	const renderVersion = ref(0);
+	const appleFeedback = ref<AppleFeedbackCue | null>(null);
 
 	let nextAppleId = 0;
+	let nextAppleFeedbackId = 0;
+	let appleFeedbackTimer: number | null = null;
 	const iceAgeSpawnPool = (Object.keys(APPLE_SPAWN_WEIGHTS) as SpawnableAppleType[]).filter(
 		(type) => type !== 'turbo'
 	);
@@ -118,6 +136,44 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 
 	function requestRender() {
 		renderVersion.value += 1;
+	}
+
+	function clearAppleFeedback() {
+		if (appleFeedbackTimer) {
+			window.clearTimeout(appleFeedbackTimer);
+			appleFeedbackTimer = null;
+		}
+		appleFeedback.value = null;
+	}
+
+	function showAppleFeedback(apple: Apple) {
+		if (
+			!isAsianDifficulty(difficulty.value) ||
+			(apple.type !== 'chill' && apple.type !== 'rotten')
+		) {
+			return;
+		}
+
+		nextAppleFeedbackId += 1;
+		const type = apple.type;
+		appleFeedback.value = {
+			id: nextAppleFeedbackId,
+			type,
+			position: {
+				x: clamp(apple.position.x, 0, mapWidth.value - 1),
+				y: clamp(apple.position.y, 0, mapHeight.value - 1)
+			},
+			placement: apple.position.y < mapHeight.value / 2 ? 'bottom' : 'top',
+			lineIndex: getRandomMessageIndex(ASIAN_APPLE_FEEDBACK_LINE_COUNT[type])
+		};
+
+		if (appleFeedbackTimer) {
+			window.clearTimeout(appleFeedbackTimer);
+		}
+		appleFeedbackTimer = window.setTimeout(() => {
+			appleFeedback.value = null;
+			appleFeedbackTimer = null;
+		}, 1600);
 	}
 
 	function getNextAppleId() {
@@ -366,6 +422,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		snakeBody.value = result.snakeBody;
 		pointsMultiplier.value = result.pointsMultiplier;
 		activeEffects.value = result.activeEffects;
+		showAppleFeedback(eatenApple);
 		apples.value = removeApple(apples.value, eatenApple.id);
 		return result.extraForwardSteps;
 	}
@@ -481,6 +538,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 			gameLoop.value = null;
 		}
 		clearEventTimer();
+		clearAppleFeedback();
 	}
 
 	function initGame() {
@@ -500,6 +558,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		score.value = 0;
 		pointsMultiplier.value = 1.0;
 		activeEffects.value = [];
+		clearAppleFeedback();
 		apples.value = [];
 		bonusChain.value = null;
 		goldRushEndsAt.value = null;
@@ -538,6 +597,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		isChillActive,
 		bonusChainSteps,
 		activeEffectsList,
+		appleFeedback,
 		renderVersion,
 		setDirection,
 		handleKeydown,
