@@ -24,7 +24,7 @@ const en = {
 		asian: 'Asian'
 	},
 	leaderboard: {
-		title: 'Leaderboard',
+		title: 'Weekly Leaderboard',
 		loading: 'Loading...',
 		empty: 'No scores yet this week. Be the first!',
 		you: 'You'
@@ -85,7 +85,7 @@ const en = {
 			chill: {
 				name: 'Chill Apple',
 				effect:
-					'Temporarily slows the snake down and lowers the score multiplier without giving points. During Ice Age, it instead makes the snake slip one extra tile forward.'
+					'Temporarily slows the snake down and lowers the score multiplier without giving points.'
 			},
 			ghost: {
 				name: 'Ghost Apple',
@@ -111,19 +111,17 @@ const en = {
 		bonusChain: {
 			name: 'Bonus Chain',
 			description:
-				'A rare 4-step sequence appears. Eat apples in the shown order to claim +80, but one wrong apple ends it immediately.',
-			panelTitle: 'Bonus Chain',
-			panelInstruction: 'Eat apples in this order. One wrong bite cancels the event.'
+				'Eat 4 apples in the correct order to earn bonus points. Eating the wrong apple ends the event.'
 		},
 		goldRush: {
 			name: 'Gold Rush',
 			description:
-				'The board shifts into golden-only spawns for 10 seconds. Golden apples expire much faster, and the rotten apples they leave behind stay around longer.'
+				'Only golden apples appear during this event. Golden apples rot faster, and rotten apples stay longer.'
 		},
 		iceAge: {
 			name: 'Ice Age',
 			description:
-				'Applies Chill for 12 seconds, converts existing Turbo apples into Chill apples, and prevents new Turbo apples from spawning while the freeze lasts.'
+				'The snake is chilled, moving slower with a lower score multiplier. Chill apples give more points, but make the snake slide forward 1 tile.'
 		}
 	},
 	gameOver: {
