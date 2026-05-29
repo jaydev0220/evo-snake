@@ -4,9 +4,9 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"dev": "tsx src/index.ts",
-		"build": "tsc",
-		"type-check": "tsc --noEmit",
+		"dev": "prisma generate && tsx src/index.ts",
+		"build": "prisma generate && tsc",
+		"type-check": "prisma generate && tsc --noEmit",
 		"lint": "oxlint . --fix",
 		"format": "oxfmt src & prisma format",
 		"db:studio": "prisma studio",
