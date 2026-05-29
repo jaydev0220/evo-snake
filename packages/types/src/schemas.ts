@@ -28,6 +28,8 @@ export const envSchema = z.object({
 	DATABASE_URL: z.string().min(1),
 	CORS_ORIGIN: z.url().default('http://localhost:5173'),
 	JSON_BODY_LIMIT: z.string().min(1).default('10kb'),
+	HEALTH_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().prefault(60_000),
+	HEALTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().prefault(30),
 	RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().prefault(60_000),
 	RATE_LIMIT_MAX: z.coerce.number().int().positive().prefault(120),
 	TRUST_PROXY: z

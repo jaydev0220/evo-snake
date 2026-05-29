@@ -10,6 +10,21 @@ import router from './routes/index.js';
 
 const app = express();
 
+function createRateLimiter(windowMs: number, limit: number) {
+	return rateLimit({
+		windowMs,
+		limit,
+		standardHeaders: 'draft-8',
+		legacyHeaders: false,
+		message: {
+			error: {
+				code: 'RATE_LIMITED',
+				message: 'Too many requests, please try again later'
+			}
+		}
+	});
+}
+
 if (env.TRUST_PROXY) {
 	app.set('trust proxy', 1);
 }
@@ -24,24 +39,13 @@ app.use(
 );
 app.use(express.json({ limit: env.JSON_BODY_LIMIT }));
 
-app.use('/health', healthRouter);
-
 app.use(
-	'/v1',
-	rateLimit({
-		windowMs: env.RATE_LIMIT_WINDOW_MS,
-		limit: env.RATE_LIMIT_MAX,
-		standardHeaders: 'draft-8',
-		legacyHeaders: false,
-		message: {
-			error: {
-				code: 'RATE_LIMITED',
-				message: 'Too many requests, please try again later'
-			}
-		}
-	}),
-	router
+	'/health',
+	createRateLimiter(env.HEALTH_RATE_LIMIT_WINDOW_MS, env.HEALTH_RATE_LIMIT_MAX),
+	healthRouter
 );
+
+app.use('/v1', createRateLimiter(env.RATE_LIMIT_WINDOW_MS, env.RATE_LIMIT_MAX), router);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
