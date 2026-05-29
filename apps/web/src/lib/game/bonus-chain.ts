@@ -1,3 +1,5 @@
+import type { RandomSource } from '@packages/types';
+
 import {
 	APPLE_SPAWN_WEIGHTS,
 	BONUS_CHAIN_LENGTH,
@@ -45,7 +47,11 @@ export function getBonusChainSteps(chain: BonusChainState | null): BonusChainSte
 	}));
 }
 
-export function createBonusChain(apples: Apple[], now = Date.now()): BonusChainState | null {
+export function createBonusChain(
+	apples: Apple[],
+	now = Date.now(),
+	randomSource: RandomSource = Math.random
+): BonusChainState | null {
 	const availableTypes = apples
 		.filter((apple) => apple.type !== 'rotten')
 		.map((apple) => apple.type as SpawnableAppleType);
@@ -53,14 +59,14 @@ export function createBonusChain(apples: Apple[], now = Date.now()): BonusChainS
 		return null;
 	}
 
-	const firstStep = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+	const firstStep = availableTypes[Math.floor(randomSource() * availableTypes.length)];
 	if (!firstStep) {
 		return null;
 	}
 
 	const steps: SpawnableAppleType[] = [firstStep];
 	while (steps.length < BONUS_CHAIN_LENGTH) {
-		const nextType = getNextBonusChainType(steps);
+		const nextType = getNextBonusChainType(steps, randomSource);
 		if (!nextType) {
 			return null;
 		}
@@ -108,7 +114,7 @@ export function getPendingBonusChainSpawnType(chain: BonusChainState | null, app
 	return target;
 }
 
-function getNextBonusChainType(steps: SpawnableAppleType[]) {
+function getNextBonusChainType(steps: SpawnableAppleType[], randomSource: RandomSource) {
 	const counts = new Map<SpawnableAppleType, number>();
 	for (const type of steps) {
 		counts.set(type, (counts.get(type) ?? 0) + 1);
@@ -121,7 +127,7 @@ function getNextBonusChainType(steps: SpawnableAppleType[]) {
 		return null;
 	}
 
-	return getRandomWeightedType(eligibleTypes);
+	return getRandomWeightedType(eligibleTypes, randomSource);
 }
 
 export function ensureCurrentBonusChainTargetAvailable({

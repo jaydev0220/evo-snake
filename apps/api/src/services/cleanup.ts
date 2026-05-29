@@ -3,14 +3,23 @@ import { prisma } from './prisma.js';
 
 export async function cleanupOldScores(): Promise<number> {
 	const currentWeekStart = getWeekStart();
-	const result = await prisma.score.deleteMany({
-		where: {
-			weekStart: {
-				lt: currentWeekStart
+	const [scores, sessions] = await prisma.$transaction([
+		prisma.score.deleteMany({
+			where: {
+				weekStart: {
+					lt: currentWeekStart
+				}
 			}
-		}
-	});
-	return result.count;
+		}),
+		prisma.gameSession.deleteMany({
+			where: {
+				expiresAt: {
+					lt: new Date()
+				}
+			}
+		})
+	]);
+	return scores.count + sessions.count;
 }
 
 export function scheduleWeeklyCleanup(): void {

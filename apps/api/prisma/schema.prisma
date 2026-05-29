@@ -29,4 +29,20 @@ model Score {
   createdAt  DateTime @default(now())
 
   @@index([difficulty, map, weekStart])
+  @@index([difficulty, map, weekStart, playerId, score])
+}
+
+model GameSession {
+  id         String    @id @default(uuid())
+  playerId   String
+  playerName String
+  difficulty String
+  map        String    @default("classic")
+  seed       Int
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  finishedAt DateTime?
+
+  @@index([playerId, createdAt])
+  @@index([expiresAt])
 }

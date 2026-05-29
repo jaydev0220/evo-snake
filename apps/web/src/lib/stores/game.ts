@@ -1,8 +1,14 @@
-import type { Difficulty, LeaderboardEntry, MapId, PlayerRank } from '@packages/types';
+import type { Difficulty, GameInput, LeaderboardEntry, MapId, PlayerRank } from '@packages/types';
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 
-import { fetchLeaderboard, fetchMyRank, submitScore } from '../api';
+import {
+	fetchLeaderboard,
+	fetchMyRank,
+	finishGameSession,
+	type GameSessionResponse,
+	startGameSession
+} from '../api';
 
 const PLAYER_ID_KEY = 'evosnake_player_id';
 
@@ -37,6 +43,7 @@ export const useGameStore = defineStore('game', () => {
 
 	const leaderboard = ref<LeaderboardEntry[]>([]);
 	const myRank = ref<PlayerRank | null>(null);
+	const activeSession = ref<GameSessionResponse | null>(null);
 	const isLoading = ref(false);
 	const error = ref<string | null>(null);
 
@@ -82,21 +89,41 @@ export const useGameStore = defineStore('game', () => {
 		}
 	}
 
-	async function postScore(score: number, difficulty: Difficulty, map: MapId) {
+	async function createGameSession(difficulty: Difficulty, map: MapId) {
 		const trimmedName = playerName.value.trim();
 		if (!trimmedName) {
 			error.value = 'errors.playerNameRequired';
+			return null;
+		}
+
+		try {
+			activeSession.value = await startGameSession({
+				playerId: playerId.value,
+				playerName: trimmedName,
+				difficulty,
+				map
+			});
+			error.value = null;
+			return activeSession.value;
+		} catch {
+			error.value = 'errors.startGameFailed';
+			return null;
+		}
+	}
+
+	async function finishActiveGame(tickCount: number, inputs: GameInput[]) {
+		if (!activeSession.value) {
+			error.value = 'errors.startGameFailed';
 			return false;
 		}
 
 		try {
-			await submitScore({
-				playerId: playerId.value,
-				playerName: trimmedName,
-				score,
-				difficulty,
-				map
+			await finishGameSession({
+				sessionId: activeSession.value.sessionId,
+				tickCount,
+				inputs
 			});
+			activeSession.value = null;
 			error.value = null;
 			await loadLeaderboard();
 			return true;
@@ -113,6 +140,7 @@ export const useGameStore = defineStore('game', () => {
 		playerId,
 		leaderboard,
 		myRank,
+		activeSession,
 		isLoading,
 		error,
 		setPlayerName,
@@ -120,6 +148,7 @@ export const useGameStore = defineStore('game', () => {
 		setMap,
 		loadLeaderboard,
 		loadMyRank,
-		postScore
+		createGameSession,
+		finishActiveGame
 	};
 });

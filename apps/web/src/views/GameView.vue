@@ -53,6 +53,8 @@
 		activeEffectsList,
 		appleFeedback,
 		renderVersion,
+		tickCount,
+		inputLog,
 		setDirection,
 		handleKeydown,
 		initGame,
@@ -283,7 +285,7 @@
 	async function handleUploadScore() {
 		isUploading.value = true;
 		uploadError.value = null;
-		const ok = await store.postScore(score.value, difficulty.value, selectedMap.value);
+		const ok = await store.finishActiveGame(tickCount.value, [...inputLog.value]);
 		if (!ok) {
 			uploadError.value = store.error ?? 'errors.uploadScoreFailed';
 		}
@@ -299,8 +301,18 @@
 		closeGameOver();
 		isUploading.value = false;
 		uploadError.value = null;
+		void startVerifiedGame();
+	}
+
+	async function startVerifiedGame() {
 		resizeCanvas();
-		initGame();
+		const session = await store.createGameSession(difficulty.value, selectedMap.value);
+		if (!session) {
+			uploadError.value = store.error ?? 'errors.startGameFailed';
+			emit('back');
+			return;
+		}
+		initGame({ seed: session.seed });
 	}
 
 	watch(renderVersion, async () => {
@@ -318,8 +330,7 @@
 	onMounted(() => {
 		window.addEventListener('keydown', handleKeydown);
 		window.addEventListener('resize', handleResize);
-		resizeCanvas();
-		initGame();
+		void startVerifiedGame();
 	});
 
 	onUnmounted(() => {

@@ -1,9 +1,11 @@
 import type {
 	Difficulty,
+	FinishGameSessionBody,
+	GameInput,
 	LeaderboardEntry,
 	MapId,
 	PlayerRank,
-	SubmitScoreBody
+	StartGameSessionBody
 } from '@packages/types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -17,8 +19,10 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 		const error = await res.json().catch(() => null);
 		throw new Error(error?.error?.message || error?.message || `HTTP ${res.status}`);
 	}
-	if (res.status === 201 || res.status === 204) return undefined as T;
-	return res.json();
+	if (res.status === 204) return undefined as T;
+	const body = await res.text();
+	if (!body) return undefined as T;
+	return JSON.parse(body) as T;
 }
 
 export async function fetchLeaderboard(
@@ -38,9 +42,24 @@ export async function fetchMyRank(
 	return apiFetch(`/v1/scores/leaderboard/me?${query}`);
 }
 
-export async function submitScore(data: SubmitScoreBody): Promise<void> {
-	return apiFetch('/v1/scores', {
+export interface GameSessionResponse {
+	sessionId: string;
+	seed: number;
+	expiresAt: string;
+}
+
+export async function startGameSession(data: StartGameSessionBody): Promise<GameSessionResponse> {
+	return apiFetch('/v1/games/start', {
 		method: 'POST',
 		body: JSON.stringify(data)
 	});
 }
+
+export async function finishGameSession(data: FinishGameSessionBody): Promise<void> {
+	return apiFetch('/v1/games/finish', {
+		method: 'POST',
+		body: JSON.stringify(data)
+	});
+}
+
+export type { GameInput };

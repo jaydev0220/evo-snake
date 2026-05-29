@@ -1,14 +1,12 @@
 import { Router } from 'express';
 
-import {
-	handlePostScore,
-	handleGetLeaderboard,
-	handleGetMyRank
-} from '../controllers/leaderboard.js';
+import { handleStartGameSession, handleFinishGameSession } from '../controllers/gameSessions.js';
+import { handleGetLeaderboard, handleGetMyRank } from '../controllers/leaderboard.js';
 
 const router = Router();
 
-router.post('/scores', handlePostScore);
+router.post('/games/start', handleStartGameSession);
+router.post('/games/finish', handleFinishGameSession);
 router.get('/scores/leaderboard', handleGetLeaderboard);
 router.get('/scores/leaderboard/me', handleGetMyRank);
 

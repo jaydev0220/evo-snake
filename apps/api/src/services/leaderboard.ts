@@ -1,40 +1,13 @@
-import type {
-	Difficulty,
-	LeaderboardEntry,
-	MapId,
-	PlayerRank,
-	SubmitScoreBody
-} from '@packages/types';
+import type { Difficulty, LeaderboardEntry, MapId, PlayerRank } from '@packages/types';
 
 import { getWeekStart } from '../lib/utils/weekStart.js';
 import { prisma } from './prisma.js';
 
 const LEADERBOARD_LIMIT = 20;
 
-export async function submitScore(input: SubmitScoreBody): Promise<void> {
+async function getTopWeeklyPlayerBestScores(difficulty: Difficulty, map: MapId) {
 	const weekStart = getWeekStart();
-
-	await prisma.$transaction([
-		prisma.player.upsert({
-			where: { id: input.playerId },
-			create: { id: input.playerId, name: input.playerName },
-			update: { name: input.playerName }
-		}),
-		prisma.score.create({
-			data: {
-				playerId: input.playerId,
-				score: input.score,
-				difficulty: input.difficulty,
-				map: input.map,
-				weekStart
-			}
-		})
-	]);
-}
-
-async function getWeeklyPlayerBestScores(difficulty: Difficulty, map: MapId) {
-	const weekStart = getWeekStart();
-	const scores = await prisma.score.groupBy({
+	return prisma.score.groupBy({
 		by: ['playerId'],
 		where: {
 			difficulty,
@@ -43,13 +16,22 @@ async function getWeeklyPlayerBestScores(difficulty: Difficulty, map: MapId) {
 		},
 		_max: {
 			score: true
-		}
+		},
+		orderBy: [{ _max: { score: 'desc' } }, { playerId: 'asc' }],
+		take: LEADERBOARD_LIMIT
 	});
+}
 
-	return scores.sort((a, b) => {
-		const scoreDiff = (b._max.score ?? 0) - (a._max.score ?? 0);
-		return scoreDiff || a.playerId.localeCompare(b.playerId);
-	});
+async function countWeeklyPlayers(difficulty: Difficulty, map: MapId) {
+	const weekStart = getWeekStart();
+	const rows = await prisma.$queryRaw<Array<{ count: bigint }>>`
+		SELECT COUNT(DISTINCT "playerId")::bigint AS count
+		FROM "Score"
+		WHERE "difficulty" = ${difficulty}
+			AND "map" = ${map}
+			AND "weekStart" = ${weekStart}
+	`;
+	return Number(rows[0]?.count ?? 0);
 }
 
 export async function getLeaderboard(
@@ -57,8 +39,10 @@ export async function getLeaderboard(
 	map: MapId
 ): Promise<{ data: LeaderboardEntry[]; totalEntries: number }> {
 	const weekStart = getWeekStart();
-	const rawScores = await getWeeklyPlayerBestScores(difficulty, map);
-	const topScores = rawScores.slice(0, LEADERBOARD_LIMIT);
+	const [topScores, totalEntries] = await Promise.all([
+		getTopWeeklyPlayerBestScores(difficulty, map),
+		countWeeklyPlayers(difficulty, map)
+	]);
 
 	const playerIds = topScores.map((r) => r.playerId);
 	const players = await prisma.player.findMany({
@@ -92,7 +76,7 @@ export async function getLeaderboard(
 		createdAt: (bestScoreDates[index]?.createdAt ?? weekStart).toISOString()
 	}));
 
-	return { data, totalEntries: rawScores.length };
+	return { data, totalEntries };
 }
 
 export async function getPlayerRank(
@@ -100,14 +84,36 @@ export async function getPlayerRank(
 	difficulty: Difficulty,
 	map: MapId
 ): Promise<PlayerRank | null> {
-	const weeklyScores = await getWeeklyPlayerBestScores(difficulty, map);
-	const playerBest = weeklyScores.find((entry) => entry.playerId === playerId);
-	if (!playerBest) {
+	const weekStart = getWeekStart();
+	const playerBest = await prisma.score.aggregate({
+		where: {
+			playerId,
+			difficulty,
+			map,
+			weekStart
+		},
+		_max: {
+			score: true
+		}
+	});
+	const playerScore = playerBest._max.score;
+	if (playerScore === null) {
 		return null;
 	}
 
-	const playerScore = playerBest._max.score ?? 0;
-	const rank = weeklyScores.filter((entry) => (entry._max.score ?? 0) > playerScore).length + 1;
+	const rows = await prisma.$queryRaw<Array<{ count: bigint }>>`
+		SELECT COUNT(*)::bigint AS count
+		FROM (
+			SELECT "playerId"
+			FROM "Score"
+			WHERE "difficulty" = ${difficulty}
+				AND "map" = ${map}
+				AND "weekStart" = ${weekStart}
+			GROUP BY "playerId"
+			HAVING MAX("score") > ${playerScore}
+		) ranked
+	`;
+	const rank = Number(rows[0]?.count ?? 0) + 1;
 
 	const player = await prisma.player.findUnique({
 		where: { id: playerId },

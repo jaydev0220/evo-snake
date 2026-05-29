@@ -192,6 +192,7 @@ const zhTW = {
 	errors: {
 		playerNameRequired: '請先輸入玩家名稱。',
 		loadLeaderboardFailed: '載入排行榜失敗。',
+		startGameFailed: '無法啟動已驗證的遊戲場次。',
 		submitScoreFailed: '提交分數失敗。',
 		uploadScoreFailed: '上傳分數失敗。'
 	},

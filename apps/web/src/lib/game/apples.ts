@@ -1,3 +1,5 @@
+import type { RandomSource } from '@packages/types';
+
 import {
 	APPLE_SPAWN_WEIGHTS,
 	MAX_SPECIAL_APPLES,
@@ -24,12 +26,14 @@ export interface RandomEmptyCellOptions {
 	mapWidth: number;
 	mapHeight: number;
 	blockedPositions?: Position[];
+	random?: RandomSource;
 }
 
 export interface SpawnAppleOptions extends RandomEmptyCellOptions {
 	createId: () => string;
 	specialAppleLifetimeMs: number;
 	rottenLifetimeMs?: number;
+	now?: number;
 	forcedType?: SpawnableAppleType | null;
 	ignoreSpecialLimit?: boolean;
 	pool?: SpawnableAppleType[];
@@ -42,10 +46,11 @@ export function isSpecialAppleType(
 }
 
 export function getRandomWeightedType(
-	pool: SpawnableAppleType[] = Object.keys(APPLE_SPAWN_WEIGHTS) as SpawnableAppleType[]
+	pool: SpawnableAppleType[] = Object.keys(APPLE_SPAWN_WEIGHTS) as SpawnableAppleType[],
+	randomSource: RandomSource = Math.random
 ) {
 	const totalWeight = pool.reduce((sum, type) => sum + APPLE_SPAWN_WEIGHTS[type], 0);
-	let random = Math.random() * totalWeight;
+	let random = randomSource() * totalWeight;
 
 	for (const type of pool) {
 		random -= APPLE_SPAWN_WEIGHTS[type];
@@ -62,7 +67,8 @@ export function getRandomEmptyCell({
 	apples,
 	mapWidth,
 	mapHeight,
-	blockedPositions = []
+	blockedPositions = [],
+	random: randomSource = Math.random
 }: RandomEmptyCellOptions): Position | null {
 	const occupied = new Set(snakeBody.map((position) => `${position.x},${position.y}`));
 	for (const apple of apples) {
@@ -82,20 +88,21 @@ export function getRandomEmptyCell({
 	}
 
 	if (emptyCells.length === 0) return null;
-	return emptyCells[Math.floor(Math.random() * emptyCells.length)]!;
+	return emptyCells[Math.floor(randomSource() * emptyCells.length)]!;
 }
 
 export function chooseSpawnType(
 	apples: Apple[],
 	ignoreSpecialLimit = false,
-	pool: SpawnableAppleType[] = Object.keys(APPLE_SPAWN_WEIGHTS) as SpawnableAppleType[]
+	pool: SpawnableAppleType[] = Object.keys(APPLE_SPAWN_WEIGHTS) as SpawnableAppleType[],
+	randomSource: RandomSource = Math.random
 ): SpawnableAppleType {
 	const specialAppleCount = apples.filter((apple) => isSpecialAppleType(apple.type)).length;
 	if (!ignoreSpecialLimit && specialAppleCount >= MAX_SPECIAL_APPLES) {
 		return 'classic';
 	}
 
-	return getRandomWeightedType(pool);
+	return getRandomWeightedType(pool, randomSource);
 }
 
 export function buildApple({
@@ -151,11 +158,20 @@ export function spawnApple({
 	createId,
 	specialAppleLifetimeMs,
 	rottenLifetimeMs,
+	now = Date.now(),
 	forcedType,
 	ignoreSpecialLimit = false,
-	pool
+	pool,
+	random
 }: SpawnAppleOptions): Apple | null {
-	const position = getRandomEmptyCell({ snakeBody, apples, mapWidth, mapHeight, blockedPositions });
+	const position = getRandomEmptyCell({
+		snakeBody,
+		apples,
+		mapWidth,
+		mapHeight,
+		blockedPositions,
+		random
+	});
 	if (!position) {
 		return null;
 	}
@@ -163,13 +179,14 @@ export function spawnApple({
 	const type =
 		forcedType && canSpawnForcedType(forcedType, apples, ignoreSpecialLimit)
 			? forcedType
-			: chooseSpawnType(apples, ignoreSpecialLimit, pool);
+			: chooseSpawnType(apples, ignoreSpecialLimit, pool, random);
 	return buildApple({
 		id: createId(),
 		type,
 		position,
 		specialAppleLifetimeMs,
-		rottenLifetimeMs
+		rottenLifetimeMs,
+		now
 	});
 }
 

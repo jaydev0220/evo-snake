@@ -1,7 +1,8 @@
 export {
 	difficultyEnum,
 	mapEnum,
-	submitScoreSchema,
+	startGameSessionSchema,
+	finishGameSessionSchema,
 	leaderboardQuerySchema,
 	meQuerySchema
 } from '@packages/types';

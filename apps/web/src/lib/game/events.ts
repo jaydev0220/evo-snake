@@ -1,3 +1,5 @@
+import type { RandomSource } from '@packages/types';
+
 import {
 	GAME_EVENT_TRIGGER_CHANCE,
 	GAME_EVENT_TRIGGER_MAX_MS,
@@ -6,16 +8,19 @@ import {
 	type GameEventType
 } from '../data';
 
-export function getRandomGameEventDelay() {
+export function getRandomGameEventDelay(randomSource: RandomSource = Math.random) {
 	const range = GAME_EVENT_TRIGGER_MAX_MS - GAME_EVENT_TRIGGER_MIN_MS;
-	return GAME_EVENT_TRIGGER_MIN_MS + Math.round(Math.random() * range);
+	return GAME_EVENT_TRIGGER_MIN_MS + Math.round(randomSource() * range);
 }
 
-export function shouldTriggerGameEvent() {
-	return Math.random() <= GAME_EVENT_TRIGGER_CHANCE;
+export function shouldTriggerGameEvent(randomSource: RandomSource = Math.random) {
+	return randomSource() <= GAME_EVENT_TRIGGER_CHANCE;
 }
 
-export function pickRandomGameEvent(eventTypes: GameEventType[]) {
+export function pickRandomGameEvent(
+	eventTypes: GameEventType[],
+	randomSource: RandomSource = Math.random
+) {
 	if (eventTypes.length === 0) {
 		return null;
 	}
@@ -28,7 +33,7 @@ export function pickRandomGameEvent(eventTypes: GameEventType[]) {
 		return null;
 	}
 
-	let random = Math.random() * totalWeight;
+	let random = randomSource() * totalWeight;
 	for (const eventType of eventTypes) {
 		random -= GAME_EVENT_TRIGGER_WEIGHTS[eventType] ?? 0;
 		if (random <= 0) {

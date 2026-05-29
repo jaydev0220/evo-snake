@@ -1,4 +1,4 @@
-import type { Difficulty, MapId } from '@packages/types';
+import { createSeededRandom, type Difficulty, type GameInput, type MapId } from '@packages/types';
 import { computed, ref, type Ref } from 'vue';
 
 import {
@@ -78,6 +78,10 @@ export interface AppleFeedbackCue {
 	lineIndex: number;
 }
 
+export interface InitGameOptions {
+	seed?: number;
+}
+
 interface PinnedBodyState {
 	pinnedAt: Position;
 	pinnedBody: Position[];
@@ -102,7 +106,9 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 	const gateCycleStartedAt = ref(Date.now());
 	const pinnedBodyState = ref<PinnedBodyState | null>(null);
 	const gameLoop = ref<number | null>(null);
-	const eventTimer = ref<number | null>(null);
+	const gameTimeMs = ref(0);
+	const tickCount = ref(0);
+	const inputLog = ref<GameInput[]>([]);
 	const showGameOver = ref(false);
 	const renderVersion = ref(0);
 	const appleFeedback = ref<AppleFeedbackCue | null>(null);
@@ -110,6 +116,8 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 	let nextAppleId = 0;
 	let nextAppleFeedbackId = 0;
 	let appleFeedbackTimer: number | null = null;
+	let randomSource = createSeededRandom(0);
+	let nextEventAtMs: number | null = null;
 	const iceAgeSpawnPool = (Object.keys(APPLE_SPAWN_WEIGHTS) as SpawnableAppleType[]).filter(
 		(type) => type !== 'turbo'
 	);
@@ -157,7 +165,9 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 
 		return apples.value.filter((apple) => apple.type === targetType).map((apple) => apple.id);
 	});
-	const activeEffectsList = computed(() => getActiveEffectsList(activeEffects.value));
+	const activeEffectsList = computed(() =>
+		getActiveEffectsList(activeEffects.value, gameTimeMs.value)
+	);
 	const pinnedBodyCells = computed(() => pinnedBodyState.value?.pinnedBody ?? []);
 	const pinnedMovementCells = computed(() => pinnedBodyState.value?.allowedCells ?? []);
 
@@ -403,6 +413,9 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 		const currentVector = directionToVector(snakeDirection.value);
 		const nextVector = directionToVector(direction);
 		if (!areOpposite(currentVector, nextVector)) {
+			if (queuedDirection.value !== direction) {
+				inputLog.value.push({ tick: tickCount.value, direction });
+			}
 			queuedDirection.value = direction;
 		}
 	}
@@ -437,6 +450,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 	}
 
 	function fillApplesToCap() {
+		const now = gameTimeMs.value;
 		while (
 			apples.value.filter((apple) => apple.source !== 'greedinessGate').length <
 			currentAppleCap.value
@@ -451,9 +465,11 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 				createId: getNextAppleId,
 				specialAppleLifetimeMs: spawnRules.specialAppleLifetimeMs,
 				rottenLifetimeMs: spawnRules.rottenLifetimeMs,
+				now,
 				forcedType: spawnRules.forcedType,
 				ignoreSpecialLimit: spawnRules.ignoreSpecialLimit,
-				pool: spawnRules.pool
+				pool: spawnRules.pool,
+				random: randomSource
 			});
 			if (!newApple) {
 				break;
@@ -466,7 +482,8 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 				chain: bonusChain.value,
 				apples: apples.value,
 				createId: getNextAppleId,
-				specialAppleLifetimeMs: currentConfig.value.specialAppleLifetimeMs
+				specialAppleLifetimeMs: currentConfig.value.specialAppleLifetimeMs,
+				now
 			});
 		}
 	}
@@ -476,7 +493,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 			return;
 		}
 
-		const chain = createBonusChain(apples.value);
+		const chain = createBonusChain(apples.value, gameTimeMs.value, randomSource);
 		if (!chain) {
 			return;
 		}
@@ -486,7 +503,8 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 			chain: bonusChain.value,
 			apples: apples.value,
 			createId: getNextAppleId,
-			specialAppleLifetimeMs: currentConfig.value.specialAppleLifetimeMs
+			specialAppleLifetimeMs: currentConfig.value.specialAppleLifetimeMs,
+			now: gameTimeMs.value
 		});
 		requestRender();
 	}
@@ -526,12 +544,12 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 		requestRender();
 	}
 
-	function maybeTriggerGameEvent() {
+	function maybeTriggerGameEvent(now: number) {
 		if (activeEventType.value || status.value !== 'playing') {
 			return;
 		}
 
-		if (!shouldTriggerGameEvent()) {
+		if (!shouldTriggerGameEvent(randomSource)) {
 			return;
 		}
 
@@ -540,37 +558,27 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 			availableEvents.push('bonusChain');
 		}
 
-		const nextEvent = pickRandomGameEvent(availableEvents);
+		const nextEvent = pickRandomGameEvent(availableEvents, randomSource);
 		if (nextEvent === 'bonusChain') {
 			startBonusChain();
 			return;
 		}
 
 		if (nextEvent === 'goldRush') {
-			startGoldRush();
+			startGoldRush(now);
 			return;
 		}
 
 		if (nextEvent === 'iceAge') {
-			startIceAge();
+			startIceAge(now);
 		}
 	}
 
-	function clearEventTimer() {
-		if (eventTimer.value) {
-			clearTimeout(eventTimer.value);
-			eventTimer.value = null;
+	function checkDueGameEvents(now: number) {
+		while (nextEventAtMs !== null && nextEventAtMs <= now && status.value === 'playing') {
+			maybeTriggerGameEvent(now);
+			nextEventAtMs += getRandomGameEventDelay(randomSource);
 		}
-	}
-
-	function scheduleEventCheck() {
-		clearEventTimer();
-		if (status.value !== 'playing') return;
-
-		eventTimer.value = window.setTimeout(() => {
-			maybeTriggerGameEvent();
-			scheduleEventCheck();
-		}, getRandomGameEventDelay());
 	}
 
 	function handleBonusChainAppleEat(eatenApple: Apple) {
@@ -582,7 +590,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 	}
 
 	function applyEatenAppleEffect(eatenApple: Apple) {
-		const now = Date.now();
+		const now = gameTimeMs.value;
 		const multiplier = displayMultiplier.value;
 		handleBonusChainAppleEat(eatenApple);
 
@@ -687,7 +695,11 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 	}
 
 	function checkExpiredEffects() {
-		const result = clearExpiredEffects(activeEffects.value, pointsMultiplier.value);
+		const result = clearExpiredEffects(
+			activeEffects.value,
+			pointsMultiplier.value,
+			gameTimeMs.value
+		);
 		activeEffects.value = result.activeEffects;
 		pointsMultiplier.value = result.pointsMultiplier;
 	}
@@ -753,8 +765,8 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 		showGameOver.value = true;
 	}
 
-	function updateGame() {
-		const now = Date.now();
+	function updateGame(now: number) {
+		checkDueGameEvents(now);
 		checkEventExpiry(now);
 		checkMapState(now);
 		if (status.value !== 'playing') {
@@ -774,10 +786,13 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 
 	function scheduleNextTick() {
 		if (status.value !== 'playing') return;
+		const tickDelayMs = currentTickMs.value;
 		gameLoop.value = window.setTimeout(() => {
-			updateGame();
+			gameTimeMs.value += tickDelayMs;
+			tickCount.value += 1;
+			updateGame(gameTimeMs.value);
 			scheduleNextTick();
-		}, currentTickMs.value);
+		}, tickDelayMs);
 	}
 
 	function stopGame() {
@@ -785,12 +800,13 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 			clearTimeout(gameLoop.value);
 			gameLoop.value = null;
 		}
-		clearEventTimer();
+		nextEventAtMs = null;
 		clearAppleFeedback();
 	}
 
-	function initGame() {
+	function initGame(options: InitGameOptions = {}) {
 		stopGame();
+		randomSource = createSeededRandom(options.seed ?? Date.now());
 
 		const centerX = Math.floor(mapWidth.value / 2);
 		const centerY = Math.floor(mapHeight.value / 2);
@@ -811,7 +827,11 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 		bonusChain.value = null;
 		goldRushEndsAt.value = null;
 		iceAgeEndsAt.value = null;
-		gateCycleStartedAt.value = Date.now();
+		gameTimeMs.value = 0;
+		tickCount.value = 0;
+		inputLog.value = [];
+		nextEventAtMs = getRandomGameEventDelay(randomSource);
+		gateCycleStartedAt.value = 0;
 		gatePhase.value = getCurrentGatePhase(gateCycleStartedAt.value);
 		pinnedBodyState.value = null;
 		nextAppleId = 0;
@@ -821,7 +841,6 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 
 		requestRender();
 		scheduleNextTick();
-		scheduleEventCheck();
 	}
 
 	function closeGameOver() {
@@ -854,6 +873,8 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Reado
 		activeEffectsList,
 		appleFeedback,
 		renderVersion,
+		tickCount,
+		inputLog,
 		setDirection,
 		handleKeydown,
 		initGame,

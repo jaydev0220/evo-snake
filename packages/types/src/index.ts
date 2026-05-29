@@ -2,16 +2,22 @@ import type { z } from 'zod';
 
 import {
 	difficultyEnum,
+	directionEnum,
 	mapEnum,
-	submitScoreSchema,
+	startGameSessionSchema,
+	gameInputSchema,
+	finishGameSessionSchema,
 	leaderboardQuerySchema,
 	meQuerySchema
 } from './schemas.js';
 
 export type Difficulty = z.infer<typeof difficultyEnum>;
 export type MapId = z.infer<typeof mapEnum>;
+export type Direction = z.infer<typeof directionEnum>;
 
-export type SubmitScoreBody = z.infer<typeof submitScoreSchema>;
+export type StartGameSessionBody = z.infer<typeof startGameSessionSchema>;
+export type GameInput = z.infer<typeof gameInputSchema>;
+export type FinishGameSessionBody = z.infer<typeof finishGameSessionSchema>;
 
 export type LeaderboardQuery = z.infer<typeof leaderboardQuerySchema>;
 
@@ -43,9 +49,14 @@ export interface PlayerRank {
 
 export {
 	difficultyEnum,
+	directionEnum,
 	mapEnum,
-	submitScoreSchema,
+	startGameSessionSchema,
+	gameInputSchema,
+	finishGameSessionSchema,
 	leaderboardQuerySchema,
 	meQuerySchema,
 	envSchema
 } from './schemas.js';
+export { createSeededRandom, type RandomSource } from './random.js';
+export { replayGame, type GameReplayInput, type GameReplayResult } from './game-replay.js';

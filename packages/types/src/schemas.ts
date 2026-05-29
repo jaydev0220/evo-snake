@@ -2,13 +2,24 @@ import * as z from 'zod';
 
 export const difficultyEnum = z.enum(['easy', 'normal', 'hard', 'asian']);
 export const mapEnum = z.enum(['classic', 'portals', 'greedinessGates']);
+export const directionEnum = z.enum(['up', 'down', 'left', 'right']);
 
-export const submitScoreSchema = z.object({
+export const startGameSessionSchema = z.object({
 	playerId: z.uuid(),
 	playerName: z.string().min(1).max(20),
-	score: z.int().min(0),
 	difficulty: difficultyEnum,
 	map: mapEnum.default('classic')
+});
+
+export const gameInputSchema = z.object({
+	tick: z.int().min(0),
+	direction: directionEnum
+});
+
+export const finishGameSessionSchema = z.object({
+	sessionId: z.uuid(),
+	tickCount: z.int().min(1).max(100_000),
+	inputs: z.array(gameInputSchema).max(100_000)
 });
 
 export const leaderboardQuerySchema = z.object({

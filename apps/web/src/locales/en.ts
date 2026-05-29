@@ -198,6 +198,7 @@ const en = {
 	errors: {
 		playerNameRequired: 'Player name is required.',
 		loadLeaderboardFailed: 'Failed to load leaderboard.',
+		startGameFailed: 'Failed to start a verified game session.',
 		submitScoreFailed: 'Failed to submit score.',
 		uploadScoreFailed: 'Failed to upload score.'
 	},
