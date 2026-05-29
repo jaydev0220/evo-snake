@@ -18,7 +18,13 @@
 	<aside
 		class="bg-evosnake-surface border-evosnake-border rounded-evosnakePanel shadow-evosnakePanel border p-5 md:p-6"
 	>
-		<h2 class="mb-4 text-[22px] font-bold tracking-[-0.03em]">{{ t('leaderboard.title') }}</h2>
+		<header class="mb-4">
+			<h2 class="text-[22px] font-bold tracking-[-0.03em]">{{ t('leaderboard.title') }}</h2>
+			<p class="text-evosnake-muted mt-1 text-xs font-bold tracking-wide uppercase">
+				{{ t(`difficulty.${store.selectedDifficulty}`) }} /
+				{{ t(`maps.${store.selectedMap}.name`) }}
+			</p>
+		</header>
 
 		<div
 			v-if="store.isLoading"

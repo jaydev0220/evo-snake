@@ -2,12 +2,14 @@ import type { z } from 'zod';
 
 import {
 	difficultyEnum,
+	mapEnum,
 	submitScoreSchema,
 	leaderboardQuerySchema,
 	meQuerySchema
 } from './schemas.js';
 
 export type Difficulty = z.infer<typeof difficultyEnum>;
+export type MapId = z.infer<typeof mapEnum>;
 
 export type SubmitScoreBody = z.infer<typeof submitScoreSchema>;
 
@@ -21,6 +23,7 @@ export interface LeaderboardEntry {
 	playerName: string;
 	score: number;
 	difficulty: string;
+	map: string;
 	createdAt: string;
 }
 
@@ -35,10 +38,12 @@ export interface PlayerRank {
 	playerName: string;
 	score: number;
 	difficulty: string;
+	map: string;
 }
 
 export {
 	difficultyEnum,
+	mapEnum,
 	submitScoreSchema,
 	leaderboardQuerySchema,
 	meQuerySchema,

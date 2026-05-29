@@ -28,6 +28,7 @@
 	const { t } = useI18n({ useScope: 'global' });
 
 	const difficulty = computed(() => store.selectedDifficulty);
+	const selectedMap = computed(() => store.selectedMap);
 	const {
 		snakeBody,
 		snakeDirection,
@@ -37,6 +38,10 @@
 		showGameOver,
 		mapWidth,
 		mapHeight,
+		activeMap,
+		gatePhase,
+		pinnedBodyCells,
+		pinnedMovementCells,
 		displayMultiplier,
 		activeEventType,
 		activeEventTheme,
@@ -53,7 +58,7 @@
 		initGame,
 		stopGame,
 		closeGameOver
-	} = useSnakeGame(difficulty);
+	} = useSnakeGame(difficulty, selectedMap);
 	const canvasRef = ref<HTMLCanvasElement | null>(null);
 	const applePositions = ref<
 		Array<{ id: string; type: AppleType; x: number; y: number; size: number; isTarget: boolean }>
@@ -65,6 +70,15 @@
 
 	const SWIPE_THRESHOLD = 10;
 	const SWIPE_MAX_AGE_MS = 500;
+	const GATE_COLORS = {
+		closed: '#EF4444',
+		open: '#22C55E',
+		warning: '#FACC15'
+	};
+	const PORTAL_COLORS = {
+		blue: '#38BDF8',
+		orange: '#FB923C'
+	};
 	const bonusChainTargetAppleIdSet = computed(() => new Set(bonusChainTargetAppleIds.value));
 	const eventStyleVars = computed<CSSProperties | undefined>(() => {
 		if (!activeEventTheme.value) {
@@ -118,6 +132,60 @@
 		setDirection(direction);
 	}
 
+	function drawBoardCell(
+		ctx: CanvasRenderingContext2D,
+		x: number,
+		y: number,
+		cellWidth: number,
+		cellHeight: number,
+		fillStyle: string,
+		inset = 2
+	) {
+		ctx.fillStyle = fillStyle;
+		ctx.fillRect(
+			x * cellWidth + inset,
+			y * cellHeight + inset,
+			cellWidth - inset * 2,
+			cellHeight - inset * 2
+		);
+	}
+
+	function drawMapFeatures(ctx: CanvasRenderingContext2D, cellWidth: number, cellHeight: number) {
+		for (const cell of pinnedMovementCells.value) {
+			drawBoardCell(ctx, cell.x, cell.y, cellWidth, cellHeight, 'rgba(250, 204, 21, 0.12)', 1);
+		}
+
+		const gates = activeMap.value.greedinessGates;
+		for (const cell of activeMap.value.wallCells) {
+			drawBoardCell(ctx, cell.x, cell.y, cellWidth, cellHeight, '#111A15', 1);
+		}
+
+		if (gates && gatePhase.value) {
+			for (const cell of gates.gateCells) {
+				drawBoardCell(ctx, cell.x, cell.y, cellWidth, cellHeight, GATE_COLORS[gatePhase.value], 1);
+			}
+		}
+
+		for (const portal of activeMap.value.portals) {
+			const centerX = portal.position.x * cellWidth + cellWidth / 2;
+			const centerY = portal.position.y * cellHeight + cellHeight / 2;
+			const radius = Math.min(cellWidth, cellHeight) * 0.36;
+			ctx.save();
+			ctx.shadowColor = PORTAL_COLORS[portal.color];
+			ctx.shadowBlur = 18;
+			ctx.strokeStyle = PORTAL_COLORS[portal.color];
+			ctx.lineWidth = Math.max(2, Math.min(cellWidth, cellHeight) * 0.12);
+			ctx.beginPath();
+			ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+			ctx.stroke();
+			ctx.restore();
+		}
+
+		for (const cell of pinnedBodyCells.value) {
+			drawBoardCell(ctx, cell.x, cell.y, cellWidth, cellHeight, 'rgba(148, 163, 184, 0.68)', 2);
+		}
+	}
+
 	function drawGame() {
 		const canvas = canvasRef.value;
 		if (!canvas) return;
@@ -144,6 +212,8 @@
 			ctx.lineTo(canvas.width, i * cellHeight);
 			ctx.stroke();
 		}
+
+		drawMapFeatures(ctx, cellWidth, cellHeight);
 
 		const snakeColor = isGhostActive.value
 			? SNAKE_COLORS.ghost
@@ -213,7 +283,7 @@
 	async function handleUploadScore() {
 		isUploading.value = true;
 		uploadError.value = null;
-		const ok = await store.postScore(score.value, difficulty.value);
+		const ok = await store.postScore(score.value, difficulty.value, selectedMap.value);
 		if (!ok) {
 			uploadError.value = store.error ?? 'errors.uploadScoreFailed';
 		}
@@ -290,6 +360,7 @@
 						:score="score"
 						:multiplier="displayMultiplier"
 						:mode="difficulty"
+						:map="selectedMap"
 					/>
 
 					<section
@@ -395,6 +466,7 @@
 			:open="showGameOver"
 			:score="score"
 			:mode="difficulty"
+			:map="selectedMap"
 			:length="snakeBody.length"
 			:is-uploading="isUploading"
 			:upload-error="uploadError"

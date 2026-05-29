@@ -10,10 +10,16 @@
 		isAsianDifficulty
 	} from '../lib/asian-mode';
 	import { FRUIT_GUIDE } from '../lib/data';
-	import { CONTROL_GUIDE_CARDS, EVENT_GUIDE_ITEMS, type GuideTab } from '../lib/how-to-play';
+	import {
+		CONTROL_GUIDE_CARDS,
+		EVENT_GUIDE_ITEMS,
+		MAP_GUIDE_ITEMS,
+		type GuideTab
+	} from '../lib/how-to-play';
 	import HowToPlayApplesTab from './HowToPlayApplesTab.vue';
 	import HowToPlayControlsTab from './HowToPlayControlsTab.vue';
 	import HowToPlayEventsTab from './HowToPlayEventsTab.vue';
+	import HowToPlayMapsTab from './HowToPlayMapsTab.vue';
 
 	const isOpen = defineModel<boolean>({ required: true });
 	const props = defineProps<{
@@ -41,6 +47,11 @@
 			id: 'events' as const,
 			label: t('howToPlay.events'),
 			detail: t('howToPlay.eventsCount', { count: EVENT_GUIDE_ITEMS.length })
+		},
+		{
+			id: 'maps' as const,
+			label: t('howToPlay.maps'),
+			detail: t('howToPlay.mapsCount', { count: MAP_GUIDE_ITEMS.length })
 		}
 	]);
 	const isAsianGuide = computed(() => isAsianDifficulty(props.difficulty));
@@ -181,7 +192,7 @@
 
 				<nav
 					v-if="!isAsianGuide"
-					class="border-evosnake-border grid grid-cols-3 gap-1.5 border-b p-2.5 md:gap-2 md:px-4"
+					class="border-evosnake-border grid grid-cols-2 gap-1.5 border-b p-2.5 md:grid-cols-4 md:gap-2 md:px-4"
 					:aria-label="t('howToPlay.sections')"
 					role="tablist"
 				>
@@ -235,12 +246,21 @@
 					</section>
 
 					<section
-						v-else
+						v-else-if="activeTab === 'events'"
 						:id="getPanelId('events')"
 						:aria-labelledby="getTabId('events')"
 						role="tabpanel"
 					>
 						<HowToPlayEventsTab />
+					</section>
+
+					<section
+						v-else
+						:id="getPanelId('maps')"
+						:aria-labelledby="getTabId('maps')"
+						role="tabpanel"
+					>
+						<HowToPlayMapsTab />
 					</section>
 				</div>
 			</section>

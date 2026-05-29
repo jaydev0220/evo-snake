@@ -24,6 +24,9 @@ model Score {
   player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
   score      Int
   difficulty String
+  map        String   @default("classic")
   weekStart  DateTime
   createdAt  DateTime @default(now())
+
+  @@index([difficulty, map, weekStart])
 }

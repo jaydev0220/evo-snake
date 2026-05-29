@@ -157,7 +157,7 @@ export function ensureCurrentBonusChainTargetAvailable({
 function findBonusChainReplacementIndex(apples: Apple[], target: SpawnableAppleType) {
 	const candidateIndexes = apples
 		.map((apple, index) => ({ apple, index }))
-		.filter(({ apple }) => apple.type !== target);
+		.filter(({ apple }) => apple.type !== target && apple.source !== 'greedinessGate');
 	if (candidateIndexes.length === 0) {
 		return -1;
 	}

@@ -6,6 +6,7 @@
 	import DifficultySelector from '../components/DifficultySelector.vue';
 	import HowToPlayModal from '../components/HowToPlayModal.vue';
 	import LeaderboardPanel from '../components/LeaderboardPanel.vue';
+	import MapSelector from '../components/MapSelector.vue';
 	import { useGameStore } from '../lib/stores/game';
 
 	const store = useGameStore();
@@ -68,6 +69,8 @@
 					</label>
 
 					<DifficultySelector v-model="store.selectedDifficulty" />
+
+					<MapSelector v-model="store.selectedMap" />
 
 					<div class="grid grid-cols-1 gap-2.5 md:grid-cols-3">
 						<button

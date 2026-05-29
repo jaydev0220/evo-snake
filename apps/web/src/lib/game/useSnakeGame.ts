@@ -1,4 +1,4 @@
-import type { Difficulty } from '@packages/types';
+import type { Difficulty, MapId } from '@packages/types';
 import { computed, ref, type Ref } from 'vue';
 
 import {
@@ -15,6 +15,7 @@ import {
 	GOLD_RUSH_DURATION_MS,
 	GOLD_RUSH_ROTTEN_LIFETIME_MULTIPLIER,
 	GOLD_RUSH_SPECIAL_LIFETIME_MULTIPLIER,
+	GREEDINESS_GATE_MAX_CUT_PENALTY_RATIO,
 	ICE_AGE_DURATION_MS,
 	MAX_APPLES_BY_DIFFICULTY,
 	ROTTEN_APPLE_LIFETIME_MS,
@@ -28,7 +29,13 @@ import {
 	type Position,
 	type SpawnableAppleType
 } from '../data';
-import { normalizeSpawnableApples, removeApple, spawnApple, updateExpiredApples } from './apples';
+import {
+	buildApple,
+	normalizeSpawnableApples,
+	removeApple,
+	spawnApple,
+	updateExpiredApples
+} from './apples';
 import {
 	advanceBonusChain,
 	createBonusChain,
@@ -55,6 +62,13 @@ import {
 	isOutsideBounds,
 	isSamePosition
 } from './geometry';
+import {
+	createMapLayout,
+	getGreedinessGatePhase,
+	positionListIncludes,
+	type GameMapLayout,
+	type GatePhase
+} from './maps';
 
 export interface AppleFeedbackCue {
 	id: number;
@@ -64,7 +78,14 @@ export interface AppleFeedbackCue {
 	lineIndex: number;
 }
 
-export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
+interface PinnedBodyState {
+	pinnedAt: Position;
+	pinnedBody: Position[];
+	allowedCells: Position[];
+	penaltyRatio: number;
+}
+
+export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>, mapId: Readonly<Ref<MapId>>) {
 	const status = ref<GameStatus>('playing');
 	const snakeBody = ref<Position[]>([]);
 	const snakeDirection = ref<Direction>('right');
@@ -77,6 +98,9 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 	const bonusChain = ref<BonusChainState | null>(null);
 	const goldRushEndsAt = ref<number | null>(null);
 	const iceAgeEndsAt = ref<number | null>(null);
+	const gatePhase = ref<GatePhase | null>(null);
+	const gateCycleStartedAt = ref(Date.now());
+	const pinnedBodyState = ref<PinnedBodyState | null>(null);
 	const gameLoop = ref<number | null>(null);
 	const eventTimer = ref<number | null>(null);
 	const showGameOver = ref(false);
@@ -94,6 +118,7 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 	const currentAppleCap = computed(() => MAX_APPLES_BY_DIFFICULTY[difficulty.value]);
 	const mapWidth = computed(() => currentConfig.value.mapWidth);
 	const mapHeight = computed(() => currentConfig.value.mapHeight);
+	const activeMap = computed(() => createMapLayout(mapId.value, mapWidth.value, mapHeight.value));
 	const currentTickMs = computed(() =>
 		getCurrentTickMs(currentConfig.value.tickMs, activeEffects.value)
 	);
@@ -133,6 +158,8 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		return apples.value.filter((apple) => apple.type === targetType).map((apple) => apple.id);
 	});
 	const activeEffectsList = computed(() => getActiveEffectsList(activeEffects.value));
+	const pinnedBodyCells = computed(() => pinnedBodyState.value?.pinnedBody ?? []);
+	const pinnedMovementCells = computed(() => pinnedBodyState.value?.allowedCells ?? []);
 
 	function requestRender() {
 		renderVersion.value += 1;
@@ -222,6 +249,156 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		};
 	}
 
+	function getAppleBlockedCells() {
+		return activeMap.value.appleBlockedCells;
+	}
+
+	function getCurrentGatePhase(now = Date.now()) {
+		const layout = activeMap.value.greedinessGates;
+		if (!layout) return null;
+		return getGreedinessGatePhase(layout, now, gateCycleStartedAt.value);
+	}
+
+	function getPortalMove(position: Position, direction: Direction) {
+		const portal = activeMap.value.portals.find((candidate) =>
+			isSamePosition(candidate.position, position)
+		);
+		if (!portal) {
+			return { position, direction };
+		}
+		return {
+			position: { ...portal.pairedPosition },
+			direction
+		};
+	}
+
+	function isBlockedMapCell(position: Position, map: GameMapLayout = activeMap.value) {
+		if (positionListIncludes(map.wallCells, position)) {
+			return true;
+		}
+
+		const layout = map.greedinessGates;
+		return (
+			!!layout && gatePhase.value === 'closed' && positionListIncludes(layout.gateCells, position)
+		);
+	}
+
+	function isClosedChamberCell(position: Position, map: GameMapLayout = activeMap.value) {
+		const layout = map.greedinessGates;
+		return (
+			!!layout &&
+			gatePhase.value === 'closed' &&
+			positionListIncludes(layout.chamberCells, position)
+		);
+	}
+
+	function isPositionOccupied(position: Position) {
+		return (
+			snakeBody.value.some((segment) => isSamePosition(segment, position)) ||
+			apples.value.some((apple) => isSamePosition(apple.position, position))
+		);
+	}
+
+	function removeGreedinessGateApples() {
+		const nextApples = apples.value.filter((apple) => apple.source !== 'greedinessGate');
+		if (nextApples.length === apples.value.length) {
+			return false;
+		}
+		apples.value = nextApples;
+		return true;
+	}
+
+	function spawnGreedinessGateApples(now: number) {
+		const layout = activeMap.value.greedinessGates;
+		if (!layout) return false;
+
+		let didChange = false;
+		for (const position of layout.goldenApplePositions) {
+			if (isPositionOccupied(position)) {
+				continue;
+			}
+			apples.value.push(
+				buildApple({
+					id: getNextAppleId(),
+					type: 'golden',
+					position,
+					specialAppleLifetimeMs: layout.openMs + layout.warningMs + 1000,
+					now,
+					source: 'greedinessGate'
+				})
+			);
+			didChange = true;
+		}
+		return didChange;
+	}
+
+	function createPinnedMovementArea(pinnedAt: Position, head: Position, activeLength: number) {
+		const radius = Math.max(2, activeLength);
+		const dxToHead = head.x - pinnedAt.x;
+		const dyToHead = head.y - pinnedAt.y;
+		const horizontal = Math.abs(dxToHead) >= Math.abs(dyToHead);
+		const direction = horizontal ? Math.sign(dxToHead) || -1 : Math.sign(dyToHead) || -1;
+		const cells: Position[] = [];
+
+		for (let x = 0; x < mapWidth.value; x++) {
+			for (let y = 0; y < mapHeight.value; y++) {
+				const dx = x - pinnedAt.x;
+				const dy = y - pinnedAt.y;
+				const forward = horizontal ? dx * direction : dy * direction;
+				const side = horizontal ? Math.abs(dy) : Math.abs(dx);
+				if (forward >= 0 && forward < radius && side <= radius - 1) {
+					cells.push({ x, y });
+				}
+			}
+		}
+
+		return cells;
+	}
+
+	function pinSnakeBodyAtClosingGate() {
+		const layout = activeMap.value.greedinessGates;
+		const head = snakeBody.value[0];
+		if (!layout || !head) return;
+
+		if (positionListIncludes(layout.gateCells, head)) {
+			triggerGameOver();
+			return;
+		}
+
+		const pinIndex = snakeBody.value.findIndex(
+			(segment, index) => index > 0 && positionListIncludes(layout.gateCells, segment)
+		);
+		if (pinIndex < 0) return;
+
+		const originalLength = snakeBody.value.length;
+		const activeBody = snakeBody.value.slice(0, pinIndex);
+		const pinnedBody = snakeBody.value.slice(pinIndex);
+		const pinnedAt = { ...snakeBody.value[pinIndex]! };
+		snakeBody.value = activeBody;
+		targetLength.value = activeBody.length;
+		pinnedBodyState.value = {
+			pinnedAt,
+			pinnedBody,
+			allowedCells: createPinnedMovementArea(
+				pinnedAt,
+				activeBody[0] ?? pinnedAt,
+				activeBody.length
+			),
+			penaltyRatio: Math.min(
+				GREEDINESS_GATE_MAX_CUT_PENALTY_RATIO,
+				pinnedBody.length / Math.max(1, originalLength)
+			)
+		};
+	}
+
+	function failPinnedBody() {
+		const pinned = pinnedBodyState.value;
+		if (!pinned) return;
+		const penalty = Math.round(score.value * pinned.penaltyRatio);
+		score.value = Math.max(0, score.value - penalty);
+		pinnedBodyState.value = null;
+	}
+
 	function setDirection(direction: Direction) {
 		const currentVector = directionToVector(snakeDirection.value);
 		const nextVector = directionToVector(direction);
@@ -260,13 +437,17 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 	}
 
 	function fillApplesToCap() {
-		while (apples.value.length < currentAppleCap.value) {
+		while (
+			apples.value.filter((apple) => apple.source !== 'greedinessGate').length <
+			currentAppleCap.value
+		) {
 			const spawnRules = getSpawnRules();
 			const newApple = spawnApple({
 				snakeBody: snakeBody.value,
 				apples: apples.value,
 				mapWidth: mapWidth.value,
 				mapHeight: mapHeight.value,
+				blockedPositions: getAppleBlockedCells(),
 				createId: getNextAppleId,
 				specialAppleLifetimeMs: spawnRules.specialAppleLifetimeMs,
 				rottenLifetimeMs: spawnRules.rottenLifetimeMs,
@@ -433,8 +614,30 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 			return null;
 		}
 
-		const newHead = getNextPosition(head, snakeDirection.value);
+		const nextPosition = getNextPosition(head, snakeDirection.value);
+		const portalMove = getPortalMove(nextPosition, snakeDirection.value);
+		if (!portalMove) {
+			triggerGameOver();
+			return null;
+		}
+
+		const newHead = portalMove.position;
+		if (portalMove.direction !== snakeDirection.value) {
+			snakeDirection.value = portalMove.direction;
+			queuedDirection.value = portalMove.direction;
+		}
+
 		if (isOutsideBounds(newHead, mapWidth.value, mapHeight.value)) {
+			triggerGameOver();
+			return null;
+		}
+
+		if (isBlockedMapCell(newHead) || isClosedChamberCell(newHead)) {
+			triggerGameOver();
+			return null;
+		}
+
+		if (pinnedBodyState.value?.pinnedBody.some((segment) => isSamePosition(segment, newHead))) {
 			triggerGameOver();
 			return null;
 		}
@@ -447,6 +650,13 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		snakeBody.value.unshift(newHead);
 		while (snakeBody.value.length > targetLength.value) {
 			snakeBody.value.pop();
+		}
+
+		if (
+			pinnedBodyState.value &&
+			!positionListIncludes(pinnedBodyState.value.allowedCells, newHead)
+		) {
+			failPinnedBody();
 		}
 
 		return apples.value.find((apple) => isSamePosition(newHead, apple.position)) ?? null;
@@ -493,6 +703,40 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		}
 	}
 
+	function checkMapState(now = Date.now()) {
+		const nextGatePhase = getCurrentGatePhase(now);
+		if (!nextGatePhase) {
+			gatePhase.value = null;
+			pinnedBodyState.value = null;
+			return;
+		}
+
+		if (gatePhase.value === nextGatePhase) {
+			return;
+		}
+
+		gatePhase.value = nextGatePhase;
+		let didChange = false;
+		if (nextGatePhase === 'open') {
+			pinnedBodyState.value = null;
+			didChange = spawnGreedinessGateApples(now) || didChange;
+		}
+		if (nextGatePhase === 'closed') {
+			didChange = removeGreedinessGateApples() || didChange;
+			const layout = activeMap.value.greedinessGates;
+			const head = snakeBody.value[0];
+			if (layout && head && positionListIncludes(layout.chamberCells, head)) {
+				triggerGameOver();
+				return;
+			}
+			pinSnakeBodyAtClosingGate();
+		}
+
+		if (didChange || status.value === 'playing') {
+			requestRender();
+		}
+	}
+
 	function updateApplesForExpiry(now = Date.now()) {
 		const result = updateExpiredApples(apples.value, now);
 		if (!result.didChange) {
@@ -512,6 +756,10 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 	function updateGame() {
 		const now = Date.now();
 		checkEventExpiry(now);
+		checkMapState(now);
+		if (status.value !== 'playing') {
+			return;
+		}
 		checkExpiredEffects();
 		updateApplesForExpiry(now);
 
@@ -563,6 +811,9 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		bonusChain.value = null;
 		goldRushEndsAt.value = null;
 		iceAgeEndsAt.value = null;
+		gateCycleStartedAt.value = Date.now();
+		gatePhase.value = getCurrentGatePhase(gateCycleStartedAt.value);
+		pinnedBodyState.value = null;
 		nextAppleId = 0;
 		fillApplesToCap();
 		status.value = 'playing';
@@ -588,6 +839,10 @@ export function useSnakeGame(difficulty: Readonly<Ref<Difficulty>>) {
 		currentConfig,
 		mapWidth,
 		mapHeight,
+		activeMap,
+		gatePhase,
+		pinnedBodyCells,
+		pinnedMovementCells,
 		displayMultiplier,
 		activeEventType,
 		activeEventTheme,

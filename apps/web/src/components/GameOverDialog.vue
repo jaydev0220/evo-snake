@@ -1,6 +1,6 @@
 <script setup lang="ts">
 	import { Trophy, X } from '@lucide/vue';
-	import type { Difficulty } from '@packages/types';
+	import type { Difficulty, MapId } from '@packages/types';
 	import { computed } from 'vue';
 	import { useI18n } from 'vue-i18n';
 
@@ -10,6 +10,7 @@
 		open: boolean;
 		score: number;
 		mode: Difficulty;
+		map: MapId;
 		length: number;
 		isUploading: boolean;
 		uploadError: string | null;
@@ -82,7 +83,7 @@
 						</div>
 					</div>
 
-					<div class="grid grid-cols-2 gap-3">
+					<div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
 						<div
 							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid gap-1 border px-3 py-2.5"
 						>
@@ -91,6 +92,16 @@
 							</div>
 							<div class="text-evosnake-text text-sm font-bold">
 								{{ t(`difficulty.${mode}`) }}
+							</div>
+						</div>
+						<div
+							class="rounded-evosnake border-evosnake-border bg-evosnake-surface2 grid gap-1 border px-3 py-2.5"
+						>
+							<div class="text-evosnake-muted text-xs font-extrabold tracking-wider uppercase">
+								{{ t('game.map') }}
+							</div>
+							<div class="text-evosnake-text text-sm font-bold">
+								{{ t(`maps.${map}.name`) }}
 							</div>
 						</div>
 						<div

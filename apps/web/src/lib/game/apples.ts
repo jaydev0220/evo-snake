@@ -14,6 +14,7 @@ export interface BuildAppleOptions {
 	position: Position;
 	specialAppleLifetimeMs: number;
 	rottenLifetimeMs?: number;
+	source?: Apple['source'];
 	now?: number;
 }
 
@@ -22,6 +23,7 @@ export interface RandomEmptyCellOptions {
 	apples: Apple[];
 	mapWidth: number;
 	mapHeight: number;
+	blockedPositions?: Position[];
 }
 
 export interface SpawnAppleOptions extends RandomEmptyCellOptions {
@@ -59,11 +61,15 @@ export function getRandomEmptyCell({
 	snakeBody,
 	apples,
 	mapWidth,
-	mapHeight
+	mapHeight,
+	blockedPositions = []
 }: RandomEmptyCellOptions): Position | null {
 	const occupied = new Set(snakeBody.map((position) => `${position.x},${position.y}`));
 	for (const apple of apples) {
 		occupied.add(`${apple.position.x},${apple.position.y}`);
+	}
+	for (const position of blockedPositions) {
+		occupied.add(`${position.x},${position.y}`);
 	}
 
 	const emptyCells: Position[] = [];
@@ -98,6 +104,7 @@ export function buildApple({
 	position,
 	specialAppleLifetimeMs,
 	rottenLifetimeMs = ROTTEN_APPLE_LIFETIME_MS,
+	source,
 	now = Date.now()
 }: BuildAppleOptions): Apple {
 	const expiresAt =
@@ -113,7 +120,8 @@ export function buildApple({
 		position,
 		spawnedAt: now,
 		expiresAt,
-		rottenLifetimeMs
+		rottenLifetimeMs,
+		source
 	};
 }
 
@@ -139,6 +147,7 @@ export function spawnApple({
 	apples,
 	mapWidth,
 	mapHeight,
+	blockedPositions,
 	createId,
 	specialAppleLifetimeMs,
 	rottenLifetimeMs,
@@ -146,7 +155,7 @@ export function spawnApple({
 	ignoreSpecialLimit = false,
 	pool
 }: SpawnAppleOptions): Apple | null {
-	const position = getRandomEmptyCell({ snakeBody, apples, mapWidth, mapHeight });
+	const position = getRandomEmptyCell({ snakeBody, apples, mapWidth, mapHeight, blockedPositions });
 	if (!position) {
 		return null;
 	}
@@ -222,6 +231,7 @@ export function normalizeSpawnableApples({
 				position: apple.position,
 				specialAppleLifetimeMs,
 				rottenLifetimeMs,
+				source: apple.source,
 				now
 			}),
 			id: apple.id

@@ -112,6 +112,17 @@ function upsertStructuredData(
 					isAccessibleForFree: true,
 					operatingSystem: 'Any',
 					keywords: translate('seo.keywords'),
+					additionalProperty: [
+						{
+							'@type': 'PropertyValue',
+							name: 'Selectable maps',
+							value: [
+								translate('maps.classic.name'),
+								translate('maps.portals.name'),
+								translate('maps.greedinessGates.name')
+							].join(', ')
+						}
+					],
 					potentialAction: {
 						'@type': 'PlayAction',
 						target: pageUrl

@@ -23,6 +23,22 @@ const zhTW = {
 		hard: '困難',
 		asian: '亞洲'
 	},
+	maps: {
+		label: '地圖選擇',
+		classic: {
+			name: '經典',
+			description: '沒有特殊規則的乾淨地圖。'
+		},
+		portals: {
+			name: '傳送門',
+			description: '一張有傳送門的地圖，傳送門由狹窄的通道連接。進入通道後會穿越到另一側。'
+		},
+		greedinessGates: {
+			name: '貪婪閘門',
+			description:
+				'一張有狹窄房間的地圖。趁閘門開啟時進入、收集黃金蘋果，並在閘門關閉前逃出。如果閘門夾住你的身體，就必須小心脫困，否則會失去一部分身體。'
+		}
+	},
 	leaderboard: {
 		title: '週排行榜',
 		loading: '載入中...',
@@ -37,6 +53,7 @@ const zhTW = {
 		score: '分數',
 		multiplier: '倍率',
 		mode: '模式',
+		map: '地圖',
 		boardContainer: '遊戲棋盤容器',
 		boardArea: '正方形遊戲區',
 		eventLive: '事件進行中',
@@ -55,9 +72,11 @@ const zhTW = {
 		controls: '操作',
 		apples: '蘋果',
 		events: '事件',
+		maps: '地圖',
 		methodsCount: '{count} 種操作',
 		typesCount: '{count} 種類型',
-		eventsCount: '{count} 個事件'
+		eventsCount: '{count} 個事件',
+		mapsCount: '{count} 張地圖'
 	},
 	controls: {
 		wasd: 'WASD',
@@ -179,9 +198,9 @@ const zhTW = {
 	seo: {
 		title: 'EvoSnake | 貪吃蛇遊戲',
 		description:
-			'遊玩 EvoSnake，一款免費的瀏覽器貪吃蛇遊戲，結合特殊蘋果、即時事件、難度模式與排行榜競賽。',
+			'遊玩 EvoSnake，一款免費的瀏覽器貪吃蛇遊戲，結合特殊蘋果、即時事件、可選地圖、難度模式與排行榜競賽。',
 		keywords:
-			'貪吃蛇遊戲, 瀏覽器遊戲, 街機遊戲, 排行榜遊戲, 即時事件, 連鎖獎勵, 黃金熱潮, 冰河時期',
+			'貪吃蛇遊戲, 瀏覽器遊戲, 街機遊戲, 排行榜遊戲, 地圖, 即時事件, 連鎖獎勵, 黃金熱潮, 冰河時期',
 		ogImageAlt: 'EvoSnake 預覽圖，顯示蛇棋盤、蘋果與事件提示。'
 	}
 } as const;

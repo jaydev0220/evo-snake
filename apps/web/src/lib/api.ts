@@ -1,4 +1,10 @@
-import type { Difficulty, LeaderboardEntry, PlayerRank, SubmitScoreBody } from '@packages/types';
+import type {
+	Difficulty,
+	LeaderboardEntry,
+	MapId,
+	PlayerRank,
+	SubmitScoreBody
+} from '@packages/types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -16,14 +22,19 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export async function fetchLeaderboard(
-	difficulty: Difficulty
+	difficulty: Difficulty,
+	map: MapId
 ): Promise<{ data: LeaderboardEntry[]; meta: { totalEntries: number } }> {
-	const query = new URLSearchParams({ difficulty });
+	const query = new URLSearchParams({ difficulty, map });
 	return apiFetch(`/v1/scores/leaderboard?${query}`);
 }
 
-export async function fetchMyRank(playerId: string, difficulty: Difficulty): Promise<PlayerRank> {
-	const query = new URLSearchParams({ playerId, difficulty });
+export async function fetchMyRank(
+	playerId: string,
+	difficulty: Difficulty,
+	map: MapId
+): Promise<PlayerRank> {
+	const query = new URLSearchParams({ playerId, difficulty, map });
 	return apiFetch(`/v1/scores/leaderboard/me?${query}`);
 }
 

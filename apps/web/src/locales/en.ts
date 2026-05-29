@@ -23,6 +23,23 @@ const en = {
 		hard: 'Hard',
 		asian: 'Asian'
 	},
+	maps: {
+		label: 'Map selector',
+		classic: {
+			name: 'Classic',
+			description: 'A clean map with no special rules.'
+		},
+		portals: {
+			name: 'Portals',
+			description:
+				'A map with portals connected by narrow tunnels. Enter a tunnel to travel across the board.'
+		},
+		greedinessGates: {
+			name: 'Greediness Gates',
+			description:
+				'A map with a small chamber. Enter when the gates open, collect golden apples, and escape before the gates close. If the gate catches your body, you must recover carefully or lose part of your snake.'
+		}
+	},
 	leaderboard: {
 		title: 'Weekly Leaderboard',
 		loading: 'Loading...',
@@ -37,6 +54,7 @@ const en = {
 		score: 'Score',
 		multiplier: 'Multiplier',
 		mode: 'Mode',
+		map: 'Map',
 		boardContainer: 'Game board container',
 		boardArea: 'Square game area',
 		eventLive: 'Event Live',
@@ -55,9 +73,11 @@ const en = {
 		controls: 'Controls',
 		apples: 'Apples',
 		events: 'Events',
+		maps: 'Maps',
 		methodsCount: '{count} methods',
 		typesCount: '{count} types',
-		eventsCount: '{count} events'
+		eventsCount: '{count} events',
+		mapsCount: '{count} maps'
 	},
 	controls: {
 		wasd: 'WASD',
@@ -184,9 +204,9 @@ const en = {
 	seo: {
 		title: 'EvoSnake | Browser Snake Game',
 		description:
-			'Play EvoSnake, a free browser snake game with special apples, live events, difficulty modes, and leaderboard competition straight from your web browser.',
+			'Play EvoSnake, a free browser snake game with special apples, live events, selectable maps, difficulty modes, and leaderboard competition straight from your web browser.',
 		keywords:
-			'snake game, browser snake game, web game, arcade game, leaderboard game, bonus chain, gold rush, ice age',
+			'snake game, browser snake game, web game, arcade game, leaderboard game, snake maps, bonus chain, gold rush, ice age',
 		ogImageAlt: 'EvoSnake preview artwork showing a snake board, apples, and event callouts.'
 	}
 } as const;

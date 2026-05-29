@@ -1,4 +1,10 @@
-import type { Difficulty, LeaderboardEntry, PlayerRank, SubmitScoreBody } from '@packages/types';
+import type {
+	Difficulty,
+	LeaderboardEntry,
+	MapId,
+	PlayerRank,
+	SubmitScoreBody
+} from '@packages/types';
 
 import { getWeekStart } from '../lib/utils/weekStart.js';
 import { prisma } from './prisma.js';
@@ -19,18 +25,20 @@ export async function submitScore(input: SubmitScoreBody): Promise<void> {
 				playerId: input.playerId,
 				score: input.score,
 				difficulty: input.difficulty,
+				map: input.map,
 				weekStart
 			}
 		})
 	]);
 }
 
-async function getWeeklyPlayerBestScores(difficulty: Difficulty) {
+async function getWeeklyPlayerBestScores(difficulty: Difficulty, map: MapId) {
 	const weekStart = getWeekStart();
 	const scores = await prisma.score.groupBy({
 		by: ['playerId'],
 		where: {
 			difficulty,
+			map,
 			weekStart
 		},
 		_max: {
@@ -45,10 +53,11 @@ async function getWeeklyPlayerBestScores(difficulty: Difficulty) {
 }
 
 export async function getLeaderboard(
-	difficulty: Difficulty
+	difficulty: Difficulty,
+	map: MapId
 ): Promise<{ data: LeaderboardEntry[]; totalEntries: number }> {
 	const weekStart = getWeekStart();
-	const rawScores = await getWeeklyPlayerBestScores(difficulty);
+	const rawScores = await getWeeklyPlayerBestScores(difficulty, map);
 	const topScores = rawScores.slice(0, LEADERBOARD_LIMIT);
 
 	const playerIds = topScores.map((r) => r.playerId);
@@ -63,6 +72,7 @@ export async function getLeaderboard(
 				where: {
 					playerId: entry.playerId,
 					difficulty,
+					map,
 					weekStart,
 					score: entry._max.score ?? 0
 				},
@@ -78,6 +88,7 @@ export async function getLeaderboard(
 		playerName: playerMap.get(entry.playerId) ?? 'Unknown',
 		score: entry._max.score ?? 0,
 		difficulty,
+		map,
 		createdAt: (bestScoreDates[index]?.createdAt ?? weekStart).toISOString()
 	}));
 
@@ -86,9 +97,10 @@ export async function getLeaderboard(
 
 export async function getPlayerRank(
 	playerId: string,
-	difficulty: Difficulty
+	difficulty: Difficulty,
+	map: MapId
 ): Promise<PlayerRank | null> {
-	const weeklyScores = await getWeeklyPlayerBestScores(difficulty);
+	const weeklyScores = await getWeeklyPlayerBestScores(difficulty, map);
 	const playerBest = weeklyScores.find((entry) => entry.playerId === playerId);
 	if (!playerBest) {
 		return null;
@@ -107,6 +119,7 @@ export async function getPlayerRank(
 		playerId,
 		playerName: player?.name ?? 'Unknown',
 		score: playerScore,
-		difficulty
+		difficulty,
+		map
 	};
 }

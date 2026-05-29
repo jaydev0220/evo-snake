@@ -1,21 +1,25 @@
 import * as z from 'zod';
 
 export const difficultyEnum = z.enum(['easy', 'normal', 'hard', 'asian']);
+export const mapEnum = z.enum(['classic', 'portals', 'greedinessGates']);
 
 export const submitScoreSchema = z.object({
 	playerId: z.uuid(),
 	playerName: z.string().min(1).max(20),
 	score: z.int().min(0),
-	difficulty: difficultyEnum
+	difficulty: difficultyEnum,
+	map: mapEnum.default('classic')
 });
 
 export const leaderboardQuerySchema = z.object({
-	difficulty: difficultyEnum
+	difficulty: difficultyEnum,
+	map: mapEnum.default('classic')
 });
 
 export const meQuerySchema = z.object({
 	playerId: z.uuid(),
-	difficulty: difficultyEnum
+	difficulty: difficultyEnum,
+	map: mapEnum.default('classic')
 });
 
 export const envSchema = z.object({

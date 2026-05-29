@@ -24,6 +24,7 @@ export interface Apple {
 	spawnedAt: number;
 	expiresAt: number | null;
 	rottenLifetimeMs?: number;
+	source?: 'greedinessGate';
 }
 
 export interface DifficultyConfig {
@@ -107,6 +108,10 @@ export const GOLD_RUSH_DURATION_MS = 10_000;
 export const GOLD_RUSH_SPECIAL_LIFETIME_MULTIPLIER = 0.4;
 export const GOLD_RUSH_ROTTEN_LIFETIME_MULTIPLIER = 1.5;
 export const ICE_AGE_DURATION_MS = 12_000;
+export const GREEDINESS_GATE_CLOSED_MS = 4_000;
+export const GREEDINESS_GATE_OPEN_MS = 6_500;
+export const GREEDINESS_GATE_WARNING_MS = 2_500;
+export const GREEDINESS_GATE_MAX_CUT_PENALTY_RATIO = 0.7;
 
 export const GAME_EVENT_THEMES: Record<GameEventType, GameEventTheme> = {
 	bonusChain: {

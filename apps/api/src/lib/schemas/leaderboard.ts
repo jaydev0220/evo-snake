@@ -1,5 +1,6 @@
 export {
 	difficultyEnum,
+	mapEnum,
 	submitScoreSchema,
 	leaderboardQuerySchema,
 	meQuerySchema

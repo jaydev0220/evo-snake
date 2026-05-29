@@ -45,11 +45,12 @@ export async function handleGetLeaderboard(req: Request, res: Response): Promise
 		return;
 	}
 
-	const { data, totalEntries } = await getLeaderboard(result.data.difficulty);
+	const { data, totalEntries } = await getLeaderboard(result.data.difficulty, result.data.map);
 	res.json({
 		data,
 		meta: {
 			difficulty: result.data.difficulty,
+			map: result.data.map,
 			totalEntries
 		}
 	});
@@ -72,7 +73,7 @@ export async function handleGetMyRank(req: Request, res: Response): Promise<void
 		return;
 	}
 
-	const rank = await getPlayerRank(result.data.playerId, result.data.difficulty);
+	const rank = await getPlayerRank(result.data.playerId, result.data.difficulty, result.data.map);
 	if (!rank) {
 		res.status(404).json({
 			error: {
