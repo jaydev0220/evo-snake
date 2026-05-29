@@ -52,16 +52,16 @@ export interface GameEventTheme {
 }
 
 export const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
-	easy: { label: 'Easy', mapWidth: 24, mapHeight: 24, tickMs: 200, specialAppleLifetimeMs: 9000 },
+	easy: { label: 'Easy', mapWidth: 24, mapHeight: 24, tickMs: 190, specialAppleLifetimeMs: 9000 },
 	normal: {
 		label: 'Normal',
 		mapWidth: 20,
 		mapHeight: 20,
-		tickMs: 160,
+		tickMs: 150,
 		specialAppleLifetimeMs: 7500
 	},
-	hard: { label: 'Hard', mapWidth: 16, mapHeight: 16, tickMs: 120, specialAppleLifetimeMs: 6000 },
-	asian: { label: 'Asian', mapWidth: 14, mapHeight: 14, tickMs: 90, specialAppleLifetimeMs: 4500 }
+	hard: { label: 'Hard', mapWidth: 16, mapHeight: 16, tickMs: 110, specialAppleLifetimeMs: 6000 },
+	asian: { label: 'Asian', mapWidth: 14, mapHeight: 14, tickMs: 80, specialAppleLifetimeMs: 4500 }
 };
 
 export const MAX_APPLES_BY_DIFFICULTY: Record<Difficulty, number> = {
