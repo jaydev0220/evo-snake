@@ -14,13 +14,30 @@ const LEADERBOARD_LIMIT = 20;
 export async function submitScore(input: SubmitScoreBody): Promise<void> {
 	const weekStart = getWeekStart();
 
-	await prisma.$transaction([
-		prisma.player.upsert({
+	await prisma.$transaction(async (tx) => {
+		await tx.player.upsert({
 			where: { id: input.playerId },
 			create: { id: input.playerId, name: input.playerName },
 			update: { name: input.playerName }
-		}),
-		prisma.score.create({
+		});
+
+		const currentBest = await tx.score.aggregate({
+			where: {
+				playerId: input.playerId,
+				difficulty: input.difficulty,
+				map: input.map,
+				weekStart
+			},
+			_max: {
+				score: true
+			}
+		});
+
+		if ((currentBest._max.score ?? -1) > input.score) {
+			return;
+		}
+
+		await tx.score.create({
 			data: {
 				playerId: input.playerId,
 				score: input.score,
@@ -28,8 +45,8 @@ export async function submitScore(input: SubmitScoreBody): Promise<void> {
 				map: input.map,
 				weekStart
 			}
-		})
-	]);
+		});
+	});
 }
 
 async function getWeeklyPlayerBestScores(difficulty: Difficulty, map: MapId) {
