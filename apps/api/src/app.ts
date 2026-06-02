@@ -4,11 +4,12 @@ import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 
 import { env } from './lib/schemas/env.js';
-import { errorHandler, notFoundHandler } from './middlewares/errors.js';
+import { AppError, errorHandler, notFoundHandler } from './middlewares/errors.js';
 import healthRouter from './routes/health.js';
 import router from './routes/index.js';
 
 const app = express();
+const allowedCorsOrigins = new Set(env.CORS_ORIGIN);
 
 function createRateLimiter(windowMs: number, limit: number) {
 	return rateLimit({
@@ -32,7 +33,14 @@ if (env.TRUST_PROXY) {
 app.use(helmet());
 app.use(
 	cors({
-		origin: env.CORS_ORIGIN,
+		origin(origin, callback) {
+			if (!origin || allowedCorsOrigins.has(origin)) {
+				callback(null, true);
+				return;
+			}
+
+			callback(new AppError('Origin not allowed', 403, 'CORS_ORIGIN_NOT_ALLOWED'));
+		},
 		methods: ['GET', 'POST'],
 		allowedHeaders: ['Content-Type']
 	})
