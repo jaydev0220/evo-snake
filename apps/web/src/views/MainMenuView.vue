@@ -17,14 +17,6 @@
 		start: [];
 	}>();
 
-	function openBugReport() {
-		window.open(
-			'https://github.com/jaydev0220/evo-snake/blob/main/BUG_REPORT.md',
-			'_blank',
-			'noopener,noreferrer'
-		);
-	}
-
 	function handlePlay() {
 		if (!store.playerName.trim()) return;
 		store.setPlayerName(store.playerName);
@@ -106,10 +98,11 @@
 							</span>
 						</button>
 
-						<button
-							type="button"
-							class="rounded-evosnake border-evosnake-danger hover:border-evosnake-dangerHover hover:bg-evosnake-danger/10 min-h-12.5 border bg-transparent px-4 text-sm font-extrabold text-red-100"
-							@click="openBugReport"
+						<a
+							class="rounded-evosnake flex items-center border-evosnake-danger hover:border-evosnake-dangerHover hover:bg-evosnake-danger/10 min-h-12.5 border bg-transparent px-4 text-sm font-extrabold text-red-100"
+							href="https://github.com/jaydev0220/evo-snake/blob/main/BUG_REPORT.md"
+							target="_blank"
+							rel="noopener,noreferrer"
 						>
 							<span class="inline-flex w-full items-center justify-center gap-2">
 								<Bug
@@ -118,7 +111,7 @@
 								/>
 								<span>{{ t('menu.reportBug') }}</span>
 							</span>
-						</button>
+						</a>
 					</div>
 				</div>
 			</div>
