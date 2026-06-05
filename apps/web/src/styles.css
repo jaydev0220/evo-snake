@@ -39,6 +39,12 @@
 	--animate-evosnake-event-ice-apple: evosnake-event-ice-apple 4s linear infinite;
 }
 
+@layer base {
+	button {
+		@apply cursor-pointer disabled:cursor-not-allowed;
+	}
+}
+
 @keyframes evosnake-swipe-gesture {
 	0% {
 		transform: translate(-9rem, -50%) scale(0.72);
